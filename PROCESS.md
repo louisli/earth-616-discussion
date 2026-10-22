@@ -41,10 +41,7 @@ The planner reads **only** `outbox/`.
     - **No change:** the accepted version is unchanged from the previous round.
     - **Escalated:** everything still open is waiting on Lou, so another round can't settle it.
 
-  Round 6 ending without an exit **pauses** the node (`status: paused`). It is not a failure. The node waits for Lou, who picks one of:
-    - **Extend:** comment `/extend <n>` on the node's Issue to start a new attempt with *n* more rounds (default 3). Round numbers continue (`r07`, `r08`, ...).
-    - **Decide:** answer the open items in the Issue; the decision goes to `overrides.md` and the node resumes.
-    - **Park:** comment `/park` to shelve it.
+  Round 6 ending without an exit **pauses** the node (`status: paused`). It is not a failure. The node waits for one of Lou's decisions (section 8b); `/rerun` starts a new attempt and round numbers continue (`r07`, `r08`, ...).
 
   Each attempt is logged in `node.md`, so it's visible how many rounds a node needed in total.
 - **Sequential for now.** One root discussion loops at a time, in the order its `depends_on` allows (topic README gives the suggested order). Parallel loops may be enabled later, but only for roots with no dependency on each other.
@@ -89,8 +86,8 @@ id: 03.2
 parent: "03"
 depth: 2
 title: Choose entrants
-status: in-loop        # in-loop | leaf | split | paused | stuck | escalated | approved | parked
-attempt: 1             # incremented by each /extend
+status: in-loop        # in-loop | leaf | split | paused | stuck | escalated | approved | rejected | parked
+attempt: 1             # incremented by each /rerun
 round: 2               # keeps counting across attempts
 round_limit: 6         # last round allowed in this attempt
 version_hashes: []     # hash of each accepted version, for ping-pong detection
@@ -110,15 +107,15 @@ issue: 42              # GitHub Issue number mirroring this node
 - **Loops read instructions from `main`.** At the start of every round, the orchestrator merges the latest `main` into the loop branch. A change to `PROCESS.md`, Already decided or `overrides.md` takes effect from the next round.
 - **Master list (`MASTER.md` on `main`).** Every topic, root node and bundle, with status, current round, open escalations and a link to its branch and Issue. The orchestrator updates it after every round. It's the only file a loop updates on `main` mid-loop.
 - **Bundles go to `main` through a PR.** When a bundle's leaves are done, the orchestrator opens a PR from the loop branch. The PR description is the bundle brief. **Lou merging the PR is the approval.** After the merge, the orchestrator compiles the plan into `outbox/` on `main`.
-- **Redirect.** Lou comments on the PR, and the bundle re-enters the loop on its branch. The PR stays open.
+- **Anything other than a merge.** Lou uses a decision command (section 8b) as a PR comment. The PR stays open until the bundle comes back.
 
 **Issues mirror every node:**
 - **Title:** `[<topic>] <node-id> <node title>`
 - **Body:** the node's current accepted version, plus links to the branch and `node.md`
 - **Sub-issues:** a node's children are its sub-issues, so the tree is browsable in GitHub.
-- **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|paused|stuck|escalated|approved|parked>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
+- **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|paused|stuck|escalated|approved|rejected|parked>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
 - **Comments:** one per round: the order, the vote tally per item, the outcome and the audit result.
-- **Escalations:** labeled `needs-lou`. Lou answers in an issue comment, the orchestrator copies the decision into `overrides.md` on `main`, and the node re-enters the loop.
+- **Escalations:** labeled `needs-lou`. Lou answers with a decision command (section 8b) in an issue comment.
 - **Closing:** an issue closes when its node is approved (PR merged), or when it splits and all its children are closed.
 - **Source of truth:** Issues are a view. If an issue and the repo disagree, the files win, and the orchestrator re-syncs the issue.
 
@@ -163,9 +160,9 @@ All three models must vote "atomic" (3/3). A 2/3 vote means one more round.
 | Node budget | Token cap per node (set per topic) |
 | Tree size | > 50 nodes per topic |
 
-The round limit is not a breaker: hitting it pauses the node (section 2). Breakers are kept across attempts; `/extend` never resets `version_hashes`, so a node that keeps circling is still caught.
+The round limit is not a breaker: hitting it pauses the node (section 2). Breakers are kept across attempts; `/rerun` never resets `version_hashes`, so a node that keeps circling is still caught.
 
-A stuck node goes to `escalations.md` with its last 2–3 versions, the breaker that tripped, and the last objection. Once Lou decides, the node re-enters with counters reset.
+A stuck node goes to `escalations.md` with its last 2–3 versions, the breaker that tripped, and the last objection. Lou responds with a decision command (section 8b).
 
 ## 7. Audit checklist (Claude Code, after every round)
 
@@ -191,16 +188,34 @@ A stuck node goes to `escalations.md` with its last 2–3 versions, the breaker 
     - Flags (below)
     - Leaf count, depth, tokens used
     - 1 random leaf shown in full (spot check)
-- **Lou's options** (the brief is the PR description):
-    - **Approve:** merge the PR, which approves all leaves under the bundle.
-    - **Redirect:** a one-line PR comment goes to `overrides.md`, and the bundle re-enters the loop.
-    - **Drill in:** open the leaves' Issues or files.
+- **Lou's options** (the brief is the PR description): merge the PR to accept everything, use any decision command in section 8b as a PR comment, or drill in by opening the leaves' Issues or files.
 - **Flags.** These always reach Lou, even under an approved bundle:
     - Contradicts Already decided
     - Soft go whose dissent persisted
     - Hard to undo, costs money, or public-facing
     - Stuck
-- **Calibration.** The first bundle is reviewed at both brief and leaf level. As redirects drop, spot checks go down and bundle size goes up. If redirects rise, tighten again.
+- **Calibration.** The first bundle is reviewed at both brief and leaf level. As Lou's non-accept commands (rerun, reject, pick, reword) become rarer, spot checks go down and bundle size goes up. If they rise, tighten again.
+
+## 8b. Lou's decision commands
+
+Whenever something reaches Lou (an escalation, a paused or stuck node, or a bundle PR), he replies with one command as a comment on the Issue or PR. Versions are shown as A/B/C. The model names are revealed in `ballot/key.md` after voting, so Lou can look, but the commands use letters.
+
+| # | Command | What happens |
+| --- | --- | --- |
+| 1 | `/rerun [n]` | Send it back into rounds unchanged, for *n* more rounds (default 3). Starts a new attempt. |
+| 2 | `/accept all` | Accept all versions together. If any of them contradict each other, the orchestrator lists the conflicts and asks again instead of guessing. |
+| 3 | `/reject [reason]` | Reject it. The node is marked `rejected`, its Issue is closed as not planned, and the reason goes to `overrides.md` so the idea doesn't come back in another branch. |
+| 4 | `/pick A` or `/pick A C` | Keep only the chosen version(s). With one pick, it is accepted as-is. With two picks, one **merge round** runs: the models combine only those two versions and may add nothing new. |
+| 5 | `/reword <text>` | Lou's text becomes the node's new version and goes back into rounds. It is logged in `overrides.md` as Lou-authored: models may sharpen or split it, but may not contradict it. |
+| — | `/park` | Shelve it for later, untouched. |
+
+**Rules:**
+- **The orchestrator executes; it doesn't interpret.** A command that doesn't parse gets a reply on the Issue asking Lou to restate it, and nothing changes.
+- **Every command is logged in `overrides.md` on `main`,** with the node id, the command and its date. It becomes context for every model in later rounds. This is also the record of how often Lou had to step in.
+- **Scope on a bundle PR:**
+    - `/accept all` is the same as merging.
+    - `/pick` takes leaf ids instead of letters, and keeps only those leaves.
+    - `/reject` and `/reword` apply to the whole bundle unless leaf ids are given (for example, `/reject 03.2.1 out of scope`).
 
 ## 9. Output to the planner
 
