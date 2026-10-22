@@ -36,12 +36,17 @@ The planner reads **only** `outbox/`.
 | 15–20 | Blind vote (all three in parallel), tally, audit, atomic test |
 
 - **Slots are "up to 5 minutes."** A model that times out forfeits its version for that round, and the round continues with two.
-- **Up to 6 rounds per node** (max ~2 hours of wall-clock time). A node exits early as soon as one of these happens:
+- **Up to 6 rounds per attempt** (max ~2 hours of wall-clock time). A node exits early as soon as one of these happens:
     - **Converged:** every item went 3/3, and the atomic test returned leaf or split.
     - **No change:** the accepted version is unchanged from the previous round.
     - **Escalated:** everything still open is waiting on Lou, so another round can't settle it.
 
-  Round 6 ending without an exit marks the node `stuck` (section 6).
+  Round 6 ending without an exit **pauses** the node (`status: paused`). It is not a failure. The node waits for Lou, who picks one of:
+    - **Extend:** comment `/extend <n>` on the node's Issue to start a new attempt with *n* more rounds (default 3). Round numbers continue (`r07`, `r08`, ...).
+    - **Decide:** answer the open items in the Issue; the decision goes to `overrides.md` and the node resumes.
+    - **Park:** comment `/park` to shelve it.
+
+  Each attempt is logged in `node.md`, so it's visible how many rounds a node needed in total.
 - **Sequential for now.** One root discussion loops at a time, in the order its `depends_on` allows (topic README gives the suggested order). Parallel loops may be enabled later, but only for roots with no dependency on each other.
 - **Rotation.** The order rotates every round: Muse → Perplexity → Claude, then Perplexity → Claude → Muse, then Claude → Muse → Perplexity. The order is recorded in `order.md`.
 
@@ -84,8 +89,10 @@ id: 03.2
 parent: "03"
 depth: 2
 title: Choose entrants
-status: in-loop        # in-loop | leaf | split | stuck | escalated | approved
-round: 2
+status: in-loop        # in-loop | leaf | split | paused | stuck | escalated | approved | parked
+attempt: 1             # incremented by each /extend
+round: 2               # keeps counting across attempts
+round_limit: 6         # last round allowed in this attempt
 version_hashes: []     # hash of each accepted version, for ping-pong detection
 tokens_used: 0
 issue: 42              # GitHub Issue number mirroring this node
@@ -109,7 +116,7 @@ issue: 42              # GitHub Issue number mirroring this node
 - **Title:** `[<topic>] <node-id> <node title>`
 - **Body:** the node's current accepted version, plus links to the branch and `node.md`
 - **Sub-issues:** a node's children are its sub-issues, so the tree is browsable in GitHub.
-- **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|stuck|escalated|approved>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
+- **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|paused|stuck|escalated|approved|parked>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
 - **Comments:** one per round: the order, the vote tally per item, the outcome and the audit result.
 - **Escalations:** labeled `needs-lou`. Lou answers in an issue comment, the orchestrator copies the decision into `overrides.md` on `main`, and the node re-enters the loop.
 - **Closing:** an issue closes when its node is approved (PR merged), or when it splits and all its children are closed.
@@ -151,11 +158,12 @@ All three models must vote "atomic" (3/3). A 2/3 vote means one more round.
 | Breaker | Limit |
 | --- | --- |
 | Depth | > 4 levels |
-| Rounds on one node | > 6 |
 | Ping-pong | New accepted version matches an earlier `version_hashes` entry |
 | Child = parent | Child ≥ ~90% similar to its parent |
 | Node budget | Token cap per node (set per topic) |
 | Tree size | > 50 nodes per topic |
+
+The round limit is not a breaker: hitting it pauses the node (section 2). Breakers are kept across attempts; `/extend` never resets `version_hashes`, so a node that keeps circling is still caught.
 
 A stuck node goes to `escalations.md` with its last 2–3 versions, the breaker that tripped, and the last objection. Once Lou decides, the node re-enters with counters reset.
 
