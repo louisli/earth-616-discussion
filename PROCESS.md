@@ -3,7 +3,7 @@
 This repo is the shared state. Bots run on a schedule, call the models, and commit every output here. Nothing lives only in a chat. If it isn't committed, it didn't happen.
 
 ```
-inbox/ ─▶ topic ─▶ ┌─ ROUND (per node) ──────────────────────────────┐ ─▶ branch brief ─▶ Lou ─▶ outbox/ ─▶ planner
+inbox/ ─▶ topic ─▶ ┌─ ROUND (per node) ──────────────────────────────┐ ─▶ bundle brief ─▶ Lou ─▶ outbox/ ─▶ planner
                    │ 1 research + version (model A)                    │
                    │ 2 research + version (model B, reads A)           │
                    │ 3 research + version (model C, reads A + B)       │
@@ -20,7 +20,7 @@ inbox/ ─▶ topic ─▶ ┌─ ROUND (per node) ─────────�
 | Discussers | Muse, Perplexity, Claude | Research, write versions, vote | Approve leaves; resolve escalations; edit another model's files |
 | Orchestrator | Bot side (scheduler) | Runs rounds, rotates order, builds blind ballots, tallies votes, applies circuit breakers, commits | Form opinions on content |
 | Auditor | Claude Code | Checks each round against this file; can void a round | Judge whether an idea is good |
-| Owner | Lou | Reviews branch briefs, resolves escalations, final approval | Review every leaf |
+| Owner | Lou | Reviews bundle briefs, resolves escalations, final approval | Review every leaf |
 
 The planner reads **only** `outbox/`.
 
@@ -55,7 +55,7 @@ topics/YYYY-MM-<topic>/
   escalations.md                        open items waiting on Lou
   overrides.md                          Lou's redirect reasons (fed to every model)
   audit-log.md                          one line per audit result
-  briefs/<branch-id>.md                 branch briefs for Lou
+  briefs/<bundle-id>.md                 bundle briefs for Lou
   nodes/<id>/
     node.md                             current accepted version + frontmatter
     rounds/rNN/
@@ -87,7 +87,32 @@ status: in-loop        # in-loop | leaf | split | stuck | escalated | approved
 round: 2
 version_hashes: []     # hash of each accepted version, for ping-pong detection
 tokens_used: 0
+issue: 42              # GitHub Issue number mirroring this node
 ```
+
+### Where things live: `main`, loop branches, Issues
+
+| Place | Holds | Written by |
+| --- | --- | --- |
+| **`main`** | Instructions and the master list: `PROCESS.md`, `TEMPLATE.md`, `MASTER.md`, each topic's `README.md` (Already decided), `overrides.md`, `escalations.md`, `tree.md`, and `outbox/` | Orchestrator (master list and outbox), Lou (instructions) |
+| **Loop branch** `loop/<topic>/<root-id>` | Everything a discussion loop produces: `nodes/<id>/` with all rounds, research, versions, ballots, votes and audits. One branch per root discussion; its child nodes stay on the same branch. | Models, orchestrator, auditor |
+| **Issues** | One issue per node, so the discussion is visible without reading files | Orchestrator |
+
+**Rules:**
+- **Loops read instructions from `main`.** At the start of every round, the orchestrator merges the latest `main` into the loop branch. A change to `PROCESS.md`, Already decided or `overrides.md` takes effect from the next round.
+- **Master list (`MASTER.md` on `main`).** Every topic, root node and bundle, with status, current round, open escalations and a link to its branch and Issue. The orchestrator updates it after every round. It's the only file a loop updates on `main` mid-loop.
+- **Bundles go to `main` through a PR.** When a bundle's leaves are done, the orchestrator opens a PR from the loop branch. The PR description is the bundle brief. **Lou merging the PR is the approval.** After the merge, the orchestrator compiles the plan into `outbox/` on `main`.
+- **Redirect.** Lou comments on the PR, and the bundle re-enters the loop on its branch. The PR stays open.
+
+**Issues mirror every node:**
+- **Title:** `[<topic>] <node-id> <node title>`
+- **Body:** the node's current accepted version, plus links to the branch and `node.md`
+- **Sub-issues:** a node's children are its sub-issues, so the tree is browsable in GitHub.
+- **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|stuck|escalated|approved>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
+- **Comments:** one per round: the order, the vote tally per item, the outcome and the audit result.
+- **Escalations:** labeled `needs-lou`. Lou answers in an issue comment, the orchestrator copies the decision into `overrides.md` on `main`, and the node re-enters the loop.
+- **Closing:** an issue closes when its node is approved (PR merged), or when it splits and all its children are closed.
+- **Source of truth:** Issues are a view. If an issue and the repo disagree, the files win, and the orchestrator re-syncs the issue.
 
 ## 4. A round, step by step
 
@@ -148,27 +173,30 @@ A stuck node goes to `escalations.md` with its last 2–3 versions, the breaker 
 
 **Result:** `pass`, or `void` with the failed items. Repeated violations by the same model are flagged in `audit-log.md`.
 
-## 8. Lou's review: branch level, by exception
+## 8. Lou's review: bundle level, by exception
 
-- **Branch:** the lowest node whose subtree holds about **3–10 leaves**. When all its leaves are done, the orchestrator writes `briefs/<branch-id>.md`:
-    - What the branch delivers (2–3 sentences)
+- **Bundle:** the lowest node whose subtree holds about **3–10 leaves**. When all its leaves are done, the orchestrator writes `briefs/<bundle-id>.md`:
+    - What the bundle delivers (2–3 sentences)
     - Decisions made, each with vote result (3/3 or 2/3) and one-line reason
     - Assumptions
     - Flags (below)
     - Leaf count, depth, tokens used
     - 1 random leaf shown in full (spot check)
-- **Lou's options:** **approve** (all leaves under the branch), **redirect** (one line of feedback goes to `overrides.md`, and the branch re-enters the loop) or **drill in**.
-- **Flags.** These always reach Lou, even under an approved branch:
+- **Lou's options** (the brief is the PR description):
+    - **Approve:** merge the PR, which approves all leaves under the bundle.
+    - **Redirect:** a one-line PR comment goes to `overrides.md`, and the bundle re-enters the loop.
+    - **Drill in:** open the leaves' Issues or files.
+- **Flags.** These always reach Lou, even under an approved bundle:
     - Contradicts Already decided
     - Soft go whose dissent persisted
     - Hard to undo, costs money, or public-facing
     - Stuck
-- **Calibration.** The first branch is reviewed at both brief and leaf level. As redirects drop, spot checks go down and branch size goes up. If redirects rise, tighten again.
+- **Calibration.** The first bundle is reviewed at both brief and leaf level. As redirects drop, spot checks go down and bundle size goes up. If redirects rise, tighten again.
 
 ## 9. Output to the planner
 
-When Lou approves a branch, the orchestrator compiles `outbox/YYYY-MM-DD-<topic>-<branch>.md`:
+When Lou approves a bundle, the orchestrator compiles `outbox/YYYY-MM-DD-<topic>-<bundle>.md`:
 
 ```
-Goal · Decisions (with reasons) · Scope / Out of scope · Tasks (one per leaf, with acceptance criteria) · Dependencies · Open risks · Source: link to branch brief
+Goal · Decisions (with reasons) · Scope / Out of scope · Tasks (one per leaf, with acceptance criteria) · Dependencies · Open risks · Source: link to bundle brief
 ```
