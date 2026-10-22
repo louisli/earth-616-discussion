@@ -20,14 +20,14 @@ These are constraints, so don't reopen them.
 
 | # | File | Status |
 | --- | --- | --- |
-| 1 | [Product and trust model](01-product-trust-model.md) | open |
-| 2 | [Business model, competition and positioning](02-business-competition-positioning.md) | open |
-| 3 | [Arena design: tracks, entrants, MVP scope](03-arena-design.md) | open |
-| 4 | [Test cases](04-test-cases.md) | open |
-| 5 | [Scoring trust and eval methodology](05-scoring-trust-eval.md) | open |
-| 6 | [House optimizer design](06-house-optimizer.md) | open |
-| 7 | [Architecture, build plan and costs](07-architecture-build-costs.md) | open |
-| 8 | [Community and open-source strategy](08-community-open-source.md) | open |
+| 1 | [Product and trust model](01-product-trust-model.md) | seed |
+| 2 | [Business model, competition and positioning](02-business-competition-positioning.md) | seed |
+| 3 | [Arena design: tracks, entrants, MVP scope](03-arena-design.md) | seed |
+| 4 | [Test cases](04-test-cases.md) | seed |
+| 5 | [Scoring trust and eval methodology](05-scoring-trust-eval.md) | seed |
+| 6 | [House optimizer design](06-house-optimizer.md) | seed |
+| 7 | [Architecture, build plan and costs](07-architecture-build-costs.md) | seed |
+| 8 | [Community and open-source strategy](08-community-open-source.md) | seed |
 
 **Suggested order:** 3 → 5 → 4 → 7 → 6 → 1 → 2 → 8. Benchmark credibility comes first, because the product builds on it.
 

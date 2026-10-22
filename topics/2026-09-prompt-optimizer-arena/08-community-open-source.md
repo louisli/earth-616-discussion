@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: Community and open-source strategy
-status: open
+status: seed
 depends_on: [02-business-competition-positioning.md]
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -21,9 +20,3 @@ updated: 2026-10-22
 - [ ] Blind human voting alongside automated scores
 - [ ] Flywheel: patterns the community surfaces flow into the paid definitions database
 - [ ] Long-term role of the arena: community, product funnel, or both
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner

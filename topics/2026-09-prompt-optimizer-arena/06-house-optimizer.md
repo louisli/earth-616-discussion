@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: House optimizer design
-status: open
+status: seed
 depends_on: [05-scoring-trust-eval.md]
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -24,9 +23,3 @@ updated: 2026-10-22
 - [ ] Differentiator: a cross-model portability score
 - [ ] Differentiator: cost as a first-class metric
 - [ ] How the house method's results feed the definitions database
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner

@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: "Arena design: tracks, entrants, MVP scope"
-status: open
+status: seed
 depends_on: []
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -25,9 +24,3 @@ updated: 2026-10-22
 - [ ] Pick the 3 categories (coding, extraction, summarization, reasoning). Reconcile with the case types in 04.
 - [ ] Rollout: static leaderboard first, then a "try it" page with side-by-side outputs, token diff and blind voting
 - [ ] Model-dependent results (Metaculus saw optimizers help some models and hurt others) and how the leaderboard shows them
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner

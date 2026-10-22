@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: Product and trust model
-status: open
+status: seed
 depends_on: []
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -25,9 +24,3 @@ updated: 2026-10-22
     - Best-practice templates by task: summarization, extraction, classification, agentic flows
 - [ ] Which bucket the client fill-in-the-blank template maps to
 - [ ] Leakage detection as the pitch lead, turning security teams from gatekeepers into champions
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner

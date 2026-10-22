@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: Architecture, build plan and costs
-status: open
+status: seed
 depends_on: [04-test-cases.md, 05-scoring-trust-eval.md]
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -28,9 +27,3 @@ Data flow: submit → queue → runner calls models → scoring grades → datab
 - [ ] Budget: ~$20–50 per full pass across 3 models, a few hundred dollars during development (to recheck)
 - [ ] Live-run cost controls: cached results or bring-your-own-key
 - [ ] Privacy notice: tell users plainly what happens to submitted prompts
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner

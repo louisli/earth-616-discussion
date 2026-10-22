@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: Business model, competition and positioning
-status: open
+status: seed
 depends_on: [01-product-trust-model.md]
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -22,9 +21,3 @@ updated: 2026-10-22
 - [ ] Threat: incumbents with distribution bolting on an optimization feature
 - [ ] How much optimization AI vendors already do at the API level vs. the chat-app level (the API does little, which is the opening; verify)
 - [ ] Positioning: not "just another prompt manager," and credible rather than self-promotional
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner

@@ -1,9 +1,8 @@
 ---
 topic: 2026-09-prompt-optimizer-arena
 title: Test cases
-status: open
+status: seed
 depends_on: [03-arena-design.md]
-picked_up_into:
 updated: 2026-10-22
 ---
 
@@ -25,9 +24,3 @@ Each case consists of a task definition, a naive baseline prompt, an input set a
 - [ ] How these cases map onto the MVP categories from 03
 - [ ] How these cases double as enterprise sales demos
 - [ ] Cap how often the 10MB baseline runs (≈ $10–15 per run on a top model)
-
-## Decisions
-
-## Actionable output
-
-## Questions from planner
