@@ -36,6 +36,12 @@ The planner reads **only** `outbox/`.
 | 15–20 | Blind vote (all three in parallel), tally, audit, atomic test |
 
 - **Slots are "up to 5 minutes."** A model that times out forfeits its version for that round, and the round continues with two.
+- **Up to 6 rounds per node** (max ~2 hours of wall-clock time). A node exits early as soon as one of these happens:
+    - **Converged:** every item went 3/3, and the atomic test returned leaf or split.
+    - **No change:** the accepted version is unchanged from the previous round.
+    - **Escalated:** everything still open is waiting on Lou, so another round can't settle it.
+
+  Round 6 ending without an exit marks the node `stuck` (section 6).
 - **Rotation.** The order rotates every round: Muse → Perplexity → Claude, then Perplexity → Claude → Muse, then Claude → Muse → Perplexity. The order is recorded in `order.md`.
 
 ## 3. Repo layout
@@ -119,7 +125,7 @@ All three models must vote "atomic" (3/3). A 2/3 vote means one more round.
 | Breaker | Limit |
 | --- | --- |
 | Depth | > 4 levels |
-| Rounds on one node | > 3 |
+| Rounds on one node | > 6 |
 | Ping-pong | New accepted version matches an earlier `version_hashes` entry |
 | Child = parent | Child ≥ ~90% similar to its parent |
 | Node budget | Token cap per node (set per topic) |
