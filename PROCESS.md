@@ -42,6 +42,7 @@ The planner reads **only** `outbox/`.
     - **Escalated:** everything still open is waiting on Lou, so another round can't settle it.
 
   Round 6 ending without an exit marks the node `stuck` (section 6).
+- **Sequential for now.** One root discussion loops at a time, in the order its `depends_on` allows (topic README gives the suggested order). Parallel loops may be enabled later, but only for roots with no dependency on each other.
 - **Rotation.** The order rotates every round: Muse → Perplexity → Claude, then Perplexity → Claude → Muse, then Claude → Muse → Perplexity. The order is recorded in `order.md`.
 
 ## 3. Repo layout
