@@ -90,6 +90,7 @@ status: in-loop        # in-loop | leaf | split | paused | stuck | escalated | a
 attempt: 1             # incremented by each /rerun
 round: 2               # keeps counting across attempts
 round_limit: 6         # last round allowed in this attempt
+lou_cycles: 0          # times this node went [need-lou] → [updated-lou]
 version_hashes: []     # hash of each accepted version, for ping-pong detection
 tokens_used: 0
 issue: 42              # GitHub Issue number mirroring this node
@@ -121,6 +122,11 @@ issue: 42              # GitHub Issue number mirroring this node
     3. **Act.** The bot runs the command, removes the prefix and the label, and comments what it did.
     - **No valid command.** If the bot finds `[updated-lou]` without a valid command, it reverts the prefix to `[need-lou]` and asks Lou to restate.
     - **Prefix removed without a command.** If Lou removes the prefix without leaving a command, the bot puts it back.
+    - **Repeat cycles are normal.** A node can go `[need-lou]` → `[updated-lou]` → back into rounds → `[need-lou]` again, any number of times.
+        - **Counter.** The prefix carries a counter: `[need-lou #2]`, then `[updated-lou #2]`. The count is stored in `node.md` as `lou_cycles`.
+        - **Latest command wins.** On each `[updated-lou]`, the bot acts only on the **latest** command posted after the most recent `[need-lou]`. Earlier commands in the thread are history, not instructions.
+        - **Cycle comment.** Each cycle gets one bot comment: what was escalated, what Lou decided, and what happened next. Reading the comments top-down tells the full story.
+        - **Flag at 3+.** From the third cycle, the escalation comment adds a line noting that this node keeps coming back to Lou, and suggests `/reword`, `/pick` or `/park`. Nothing is forced; it's a prompt to try a different move instead of `/rerun` again.
 - **Closing:** an issue closes when its node is approved (PR merged), or when it splits and all its children are closed.
 - **Source of truth:** Issues are a view. If an issue and the repo disagree, the files win, and the orchestrator re-syncs the issue.
 
