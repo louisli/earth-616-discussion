@@ -1,0 +1,15 @@
+{
+  "name": "earth-616-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mechanical orchestrator for earth-616-discussion (AGENTS.md section 12).",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test test/unit.test.js test/e2e.test.js"
+  },
+  "dependencies": {
+    "yaml": "2.5.1"
+  }
+}

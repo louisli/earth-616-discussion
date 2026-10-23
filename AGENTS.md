@@ -84,7 +84,8 @@ topics/<state>/NNN-…/nodes/<id>/
     order.md                  positions A/B/C for this round (orchestrator)
     research-<bot>.md         (that bot)
     version-<bot>.md          (that bot)
-    ballot/X.md Y.md Z.md     shuffled, anonymized (orchestrator)
+    ballot/ballot.md          the ballot to vote from: every item side by side (orchestrator)
+    ballot/X.md Y.md Z.md     each version alone, shuffled and anonymized (orchestrator)
     vote-<bot>.md             (that bot)
     ballot/key.md             ballot letter → bot, and neutral id → original id; written after voting closes (orchestrator)
     result.md                 tally (orchestrator)
@@ -187,6 +188,7 @@ Promotion happens only in a **live session with Lou**, with any one AI as partne
     - `node.md`
 
     It writes `research-<me>.md` and `version-<me>.md`.
+   **Merge round** (after Lou's `/pick X Z`): when `order.md` has `merge_of`, every position also reads the ballot files it names (`rounds/<round>/ballot/X.md`, …) and may only combine those treatments.
 2. **Position B** reads the same, plus A's research **and version**. It writes its research and version, and states its agreements and disagreements with A.
 3. **Position C** reads the same, plus A's and B's research **and versions**. It writes its research and version, and states its agreements and disagreements with both.
 4. **The orchestrator builds a blind ballot** (7.4) and opens voting for all three bots.
@@ -294,7 +296,7 @@ position: A
 
 ## I1                                  # existing id, or NEW1, or A.NEW1
 action: keep | drop
-type: decision | research | build | question | claim
+type: decision | research | build | question | claim   # `open` appears only in seeded items; replace it
 statement: <one sentence>
 options: [<opt 1>, <opt 2>]           # decision only
 recommendation: <opt>                 # decision only
@@ -303,6 +305,7 @@ evidence: [R1, A.R2]
 agrees_with: [A]                      # B and C only: positions this treatment matches
 disagrees_with: []                    # B and C only
 disagreement_reason: <one line>       # required if disagrees_with is not empty
+acceptance: <pass/fail test for done> # expected on build items; it becomes the planner's acceptance criteria
 split_into: [<child title>, ...]      # optional: proposed child nodes from this item
 
 ## Atomic
@@ -398,10 +401,13 @@ attempt: 1
 round: 2
 round_limit: 6
 lou_cycles: 0
+next_item: 4               # next free item id; ids are never reused
 version_hashes: []          # one per round, sha256 of the accepted items text
 soft_go_dissents: {}        # item id → [{round, bot, choice}]
 dead_locks: {muse: 0, perplexity: 0, claude: 0, auditor: 0}
 bot_errors: {muse: 0, perplexity: 0, claude: 0, auditor: 0}
+merge_of: null              # set by /pick X Z: {round, letters} for the next round
+ever_stuck: false
 issue: 42
 ```
 
@@ -436,7 +442,7 @@ The handshake is the same on node Issues, topic Issues and bundle PRs, and repea
 | `/accept all` | Accept every letter's treatment of the open items. If two treatments of one item differ, list them and ask again. | Same as merging | — |
 | `/reject [reason]` | `state:rejected`, Issue closed as not planned, reason logged | Whole bundle; or `/reject <leaf ids> <reason>` for some leaves (the PR is rebuilt without them) | Topic → `rejected/`, all its open Issues closed |
 | `/pick X` or `/pick X Z` | One letter: accept that treatment for every open item, then apply pass 6. Two letters: the next round is a **merge round**, where bots may only combine those two treatments. | `/pick <leaf ids>`: rebuild the PR with only those leaves; the rest go back to `state:queued` | — |
-| `/reword <text>` | Lou's text replaces the node's accepted items as `I1` (marked Lou-authored) → `state:queued`. Bots may sharpen or split it, never contradict it. | `/reword <leaf id> <text>` for that leaf | — |
+| `/reword <text>` | Lou's text replaces the node's accepted items as one new item (`author: lou`) → `state:queued`. Bots may sharpen or split it, never contradict it. | `/reword <leaf id> <text>` for that leaf | — |
 | `/park` | `state:parked` | Close the PR; its leaves → `state:parked` | Topic → `parked/` |
 | `/resume` | Parked node → `state:queued` | — | Parked topic → `active/` |
 
@@ -447,9 +453,9 @@ The handshake is the same on node Issues, topic Issues and bundle PRs, and repea
 A node **B** is a bundle when all of these hold:
 - B and every node under it are done (section 1).
 - The subtree has between 1 and 10 nodes in `state:leaf`.
-- B has no parent, or B's parent's subtree is not yet done, or the parent's subtree has more than 10 leaves.
+- B has no parent, or B's parent is done and its subtree has more than 10 leaves.
 
-In other words: take the **highest done subtree with at most 10 leaves**. A done subtree with more than 10 leaves is bundled by its children instead. Rejected and parked nodes are left out of the bundle.
+In other words: take the **highest done subtree with at most 10 leaves**. A finished subtree **waits** while anything above it is still in rounds, so Lou reviews at the highest level possible instead of leaf by leaf. A done subtree with more than 10 leaves is bundled by its children instead. Rejected and parked nodes are left out of the bundle.
 
 ### 10.2 Brief and PR
 
@@ -500,7 +506,7 @@ Anything other than approval goes through the handshake (9.1) on the PR.
             - [ ] Nothing contradicts Already decided or `overrides.md` unless it's a `question` item.
             - [ ] `## Atomic` is filled in.
     - **Vote:**
-        1. Read only the topic README, `overrides.md`, `node.md` and `ballot/`.
+        1. Read only the topic README, `overrides.md`, `node.md` and `ballot/` (vote from `ballot/ballot.md`).
         2. Write `vote-$ME.md` (7.5): one line per ballot item, plus `atomic:`. Every reason must be based on the ballot text and name no bot.
 7. **Commit and push.** Heartbeat.
 
@@ -527,7 +533,13 @@ Anything other than approval goes through the handshake (9.1) on the PR.
 
 ## 12. Runbook: orchestrator
 
-A script, run as a scheduled GitHub Action every few minutes with `concurrency` set so only one run exists at a time. It holds `ORCH_SECRET` in the Action's secrets. It never edits bot-written text and never breaks ties.
+A script, run as a scheduled GitHub Action every few minutes with `concurrency` set so only one run exists at a time. It never edits bot-written text and never breaks ties.
+
+- **Code:** `orchestrator/`, with unit tests and an end-to-end simulation (`npm test`).
+- **Workflow:** `.github/workflows/orchestrator.yml`, which can also be run by hand, including a dry run.
+- **Settings:** `orchestrator/config.json`. **`start_rounds: false`** stops new rounds from starting while everything else keeps running. Lou turns it on once the bots are checked in.
+- **Secret:** `ORCH_SECRET` is a repo secret used for the ballot shuffle (7.4). It's never written anywhere else.
+- **Identity:** it commits as `orchestrator-bot`, and comments as `github-actions[bot]`.
 
 Each run does these passes in order.
 
@@ -587,7 +599,7 @@ Each run does these passes in order.
 - For every merged bundle PR, approve (10.3).
 
 **Pass 8 — Topics.**
-- **Topic done:** when every root of an active topic is done, `git mv` its folder to `topics/done/`, set `topic-state:done`, and close the topic Issue.
+- **Topic done:** when every root of an active topic is done and no node is still waiting in `state:leaf` (every bundle is decided), `git mv` its folder to `topics/done/`, set `topic-state:done`, and close the topic Issue.
 - **Topic commands:** topic `/park`, `/reject` and `/resume` move the folder the same way.
 
 **Pass 9 — Sync.** Update:
@@ -615,7 +627,7 @@ Handle one round per run. The singleton and lock rules (6.3) apply, with role `a
     7. **Constraints:** no accepted item contradicts the topic's Already decided or `overrides.md`. List any that do under `escalate:`. **This list doesn't void the round**; it escalates those items to Lou.
     8. **Atomic:** the atomic tally matches the votes.
     9. **Counters:** `round`, `version_hashes` and `soft_go_dissents` were updated.
-    10. **Authorship:** each commit's author matches the role that may write those paths (`<role>-bot`). This is a consistency check, not security.
+    10. **Authorship:** each commit's author matches the role that may write those paths (`<role>-bot`, or `orchestrator-bot` for orchestrator files). This is a consistency check, not security.
     11. **Approval:** nothing is `approved` without a merged PR.
 4. **Write.**
     - **`audit.md`:**

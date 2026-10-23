@@ -51,6 +51,8 @@ These are summaries. The exact steps are in [`AGENTS.md`](AGENTS.md), in the sec
 
 ### Orchestrator: a script, scheduled GitHub Action [§12]
 
+Code is in `orchestrator/` and runs every 5 minutes from `.github/workflows/orchestrator.yml`. New rounds start only while `start_rounds` is `true` in `orchestrator/config.json`.
+
 | When | What it does |
 | --- | --- |
 | A new topic folder appears | Creates the topic Issue, one node Issue per seed, and missing labels. |
@@ -61,7 +63,7 @@ These are summaries. The exact steps are in [`AGENTS.md`](AGENTS.md), in the sec
 | `state:ballot` | Checks formats, lines items up by id (new items get neutral ids), shuffles into a blind X/Y/Z ballot with each version's atomic verdict, and opens voting. |
 | All votes are in | Reveals the key, tallies per item, updates `node.md`, and sends the round to audit. |
 | `state:audited` | Applies the first matching outcome: escalate, stuck, leaf, split into child Issues, converged with no change → Lou, round limit → paused, or the next round. |
-| A done subtree with ≤10 leaves is ready | Writes the brief, cuts a `bundle/` branch from `main` with only that subtree, and opens a PR titled `[need-lou #1] …`. When the PR is merged, it writes the plan to `outbox/`. |
+| A done subtree with ≤10 leaves is ready, and everything above it is done too | Writes the brief, cuts a `bundle/` branch from `main` with only that subtree, and opens a PR titled `[need-lou #1] …`. When the PR is merged, it writes the plan to `outbox/`. |
 | A topic is finished, parked or rejected | Moves the topic's numbered folder to `topics/done/`, `parked/` or `rejected/`. |
 | Every run | Updates `MASTER.md`, `tree.md` and Issue bodies. |
 
@@ -121,6 +123,8 @@ agents/          one check-in file per AI role
 inbox/           parking lot; nothing automated
 outbox/          approved plans; the ONLY folder the planner reads
 scripts/         setup-labels.sh creates every workflow label
+orchestrator/    the orchestrator script, its config and tests
+.github/         the scheduled workflow that runs the orchestrator
 topics/
   active/ done/ parked/ rejected/
     NNN-YYYY-MM-<slug>/     NNN is unique forever; the folder moves between states
@@ -138,7 +142,7 @@ Each topic's nodes, rounds, ballots and audits live on its loop branches, `loop/
 | --- | --- |
 | Rulebook (`AGENTS.md`), labels, topic 001 seeds | ✅ ready (reviewed by an independent pass, and 28 gaps fixed) |
 | Shared bot account (one GitHub machine account) + its token in each harness | ⏳ Lou to create |
-| Orchestrator script + GitHub Action | ⏳ not built yet |
+| Orchestrator script + GitHub Action | ✅ built and tested; rounds are switched off (`start_rounds: false`) until the bots check in |
 | Bot check-ins (`agents/*.md`) | ⏳ none yet; each AI creates its own on first check-in |
 
 ## For the planner
