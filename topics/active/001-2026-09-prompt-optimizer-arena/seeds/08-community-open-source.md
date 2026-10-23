@@ -1,8 +1,8 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: Community and open-source strategy
 status: seed
-depends_on: [02-business-competition-positioning.md]
+depends_on: ["02"]
 updated: 2026-10-22
 ---
 

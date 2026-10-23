@@ -1,22 +1,22 @@
 # Master list
 
-The orchestrator keeps this file up to date after every round. Lou: start here.
+The orchestrator updates this after every round. Lou: start here. Issue links appear once the orchestrator has created them.
 
 ## Topics
 
-| Topic | Root nodes | Bundles awaiting review | Open escalations | Status |
-| --- | --- | --- | --- | --- |
-| [2026-09-prompt-optimizer-arena](topics/2026-09-prompt-optimizer-arena/README.md) | 8 | 0 | 0 | seed (loop not started) |
-
-## Root nodes — 2026-09-prompt-optimizer-arena
-
-| Id | Title | Branch | Issue | Status | Round |
+| # | Topic | State | Folder | Topic Issue | Open for Lou |
 | --- | --- | --- | --- | --- | --- |
-| 01 | Product and trust model | — | — | seed | — |
-| 02 | Business model, competition and positioning | — | — | seed | — |
-| 03 | Arena design: tracks, entrants, MVP scope | — | — | seed | — |
-| 04 | Test cases | — | — | seed | — |
-| 05 | Scoring trust and eval methodology | — | — | seed | — |
-| 06 | House optimizer design | — | — | seed | — |
-| 07 | Architecture, build plan and costs | — | — | seed | — |
-| 08 | Community and open-source strategy | — | — | seed | — |
+| 001 | Prompt Optimizer Arena + "antivirus for AI prompts" | active | [topics/active/001-2026-09-prompt-optimizer-arena](topics/active/001-2026-09-prompt-optimizer-arena/README.md) | — | 0 |
+
+## 001 — root nodes
+
+| Id | Title | Depends on | Branch | Issue | State | Round |
+| --- | --- | --- | --- | --- | --- | --- |
+| 01 | Product and trust model | — | — | — | queued | — |
+| 02 | Business model, competition and positioning | 01 | — | — | queued | — |
+| 03 | Arena design: tracks, entrants, MVP scope | — | — | — | queued | — |
+| 04 | Test cases | 03 | — | — | queued | — |
+| 05 | Scoring trust and eval methodology | 03 | — | — | queued | — |
+| 06 | House optimizer design | 05 | — | — | queued | — |
+| 07 | Architecture, build plan and costs | 04, 05 | — | — | queued | — |
+| 08 | Community and open-source strategy | 02 | — | — | queued | — |

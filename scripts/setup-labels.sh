@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Creates (or updates) every label in STATE.md. Safe to re-run.
+# Creates (or updates) every label in AGENTS.md section 6. Safe to re-run.
 # Usage: scripts/setup-labels.sh [owner/repo]
 set -euo pipefail
 REPO="${1:-louisli/earth-616-discussion}"
@@ -36,4 +36,7 @@ label "claimed:auditor"      "ededed" "Lease: auditor run in progress"
 # qualifiers
 label "soft-go" "f9d0c4" "Accepted with an attached dissent"
 for d in 0 1 2 3 4 5; do label "depth:$d" "f5f5f5" "Tree depth $d"; done
-label "topic:2026-09-prompt-optimizer-arena" "006b75" "Prompt optimizer arena topic"
+label "kind:topic" "0052cc" "Topic Issue"
+label "kind:node"  "bfd4f2" "Node Issue"
+for t in active done parked rejected; do label "topic-state:$t" "006b75" "Topic is in topics/$t/"; done
+label "topic:001" "006b75" "Topic 001 — prompt optimizer arena"

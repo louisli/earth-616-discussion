@@ -1,8 +1,8 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: Test cases
 status: seed
-depends_on: [03-arena-design.md]
+depends_on: ["03"]
 updated: 2026-10-22
 ---
 

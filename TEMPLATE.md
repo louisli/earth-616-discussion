@@ -1,8 +1,8 @@
 ---
-topic: <YYYY-MM-topic-folder>
+topic: "<NNN>"
 title: <Discussion title>
-status: seed        # seed → becomes root node nodes/<NN>/ when the loop starts
-depends_on: []      # other discussion files that should be settled first
+status: seed        # the orchestrator turns each seed into a root node + Issue
+depends_on: []      # seed ids that must finish first, e.g. ["03"]
 updated: YYYY-MM-DD
 ---
 

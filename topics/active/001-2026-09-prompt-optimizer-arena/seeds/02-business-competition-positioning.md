@@ -1,8 +1,8 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: Business model, competition and positioning
 status: seed
-depends_on: [01-product-trust-model.md]
+depends_on: ["01"]
 updated: 2026-10-22
 ---
 

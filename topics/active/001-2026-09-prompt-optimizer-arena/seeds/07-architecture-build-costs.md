@@ -1,8 +1,8 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: Architecture, build plan and costs
 status: seed
-depends_on: [04-test-cases.md, 05-scoring-trust-eval.md]
+depends_on: ["04", "05"]
 updated: 2026-10-22
 ---
 

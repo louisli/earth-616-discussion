@@ -1,5 +1,5 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: Product and trust model
 status: seed
 depends_on: []

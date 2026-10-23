@@ -1,8 +1,8 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: House optimizer design
 status: seed
-depends_on: [05-scoring-trust-eval.md]
+depends_on: ["05"]
 updated: 2026-10-22
 ---
 

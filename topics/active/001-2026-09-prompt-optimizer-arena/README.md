@@ -1,4 +1,6 @@
-# Topic: Prompt Optimizer Arena + "antivirus for AI prompts"
+# [001] Prompt Optimizer Arena + "antivirus for AI prompts"
+
+**Goal:** decide what to build for a public prompt-optimizer benchmark and the enterprise "antivirus for AI prompts" product it feeds, down to buildable tasks.
 
 Two linked ideas:
 
@@ -16,18 +18,23 @@ These are constraints, so don't reopen them.
 - **Benchmark role:** the open benchmark doubles as R&D for the paid product.
 - **Measurement:** all benchmark runs go through raw model APIs, never chat apps or consumer subscriptions.
 
-## Discussions
+## Out of scope
 
-| # | File | Status |
+- Building anything. This topic produces agreed plans only; the planner turns them into work.
+- Personal or employer-related considerations of the topic owner.
+
+## Seeds
+
+| # | Seed | Depends on |
 | --- | --- | --- |
-| 1 | [Product and trust model](01-product-trust-model.md) | seed |
-| 2 | [Business model, competition and positioning](02-business-competition-positioning.md) | seed |
-| 3 | [Arena design: tracks, entrants, MVP scope](03-arena-design.md) | seed |
-| 4 | [Test cases](04-test-cases.md) | seed |
-| 5 | [Scoring trust and eval methodology](05-scoring-trust-eval.md) | seed |
-| 6 | [House optimizer design](06-house-optimizer.md) | seed |
-| 7 | [Architecture, build plan and costs](07-architecture-build-costs.md) | seed |
-| 8 | [Community and open-source strategy](08-community-open-source.md) | seed |
+| 1 | [Product and trust model](seeds/01-product-trust-model.md) | — |
+| 2 | [Business model, competition and positioning](seeds/02-business-competition-positioning.md) | 01 |
+| 3 | [Arena design: tracks, entrants, MVP scope](seeds/03-arena-design.md) | — |
+| 4 | [Test cases](seeds/04-test-cases.md) | 03 |
+| 5 | [Scoring trust and eval methodology](seeds/05-scoring-trust-eval.md) | 03 |
+| 6 | [House optimizer design](seeds/06-house-optimizer.md) | 05 |
+| 7 | [Architecture, build plan and costs](seeds/07-architecture-build-costs.md) | 04, 05 |
+| 8 | [Community and open-source strategy](seeds/08-community-open-source.md) | 02 |
 
 **Suggested order:** 3 → 5 → 4 → 7 → 6 → 1 → 2 → 8. Benchmark credibility comes first, because the product builds on it.
 

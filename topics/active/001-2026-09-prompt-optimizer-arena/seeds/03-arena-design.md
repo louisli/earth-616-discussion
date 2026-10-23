@@ -1,5 +1,5 @@
 ---
-topic: 2026-09-prompt-optimizer-arena
+topic: "001"
 title: "Arena design: tracks, entrants, MVP scope"
 status: seed
 depends_on: []
