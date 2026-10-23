@@ -2,6 +2,7 @@
 topic: "001"
 title: Community and open-source strategy
 status: seed
+priority: 8
 depends_on: ["02"]
 updated: 2026-10-22
 ---

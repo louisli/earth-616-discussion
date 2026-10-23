@@ -2,6 +2,7 @@
 topic: "001"
 title: Scoring trust and eval methodology
 status: seed
+priority: 2
 depends_on: ["03"]
 updated: 2026-10-22
 ---

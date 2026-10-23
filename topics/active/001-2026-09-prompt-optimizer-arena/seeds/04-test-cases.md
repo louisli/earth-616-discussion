@@ -2,6 +2,7 @@
 topic: "001"
 title: Test cases
 status: seed
+priority: 3
 depends_on: ["03"]
 updated: 2026-10-22
 ---

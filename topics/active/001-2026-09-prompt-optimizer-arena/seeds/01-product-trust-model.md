@@ -2,6 +2,7 @@
 topic: "001"
 title: Product and trust model
 status: seed
+priority: 6
 depends_on: []
 updated: 2026-10-22
 ---

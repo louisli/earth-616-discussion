@@ -10,13 +10,13 @@ The orchestrator updates this after every round. Lou: start here. Issue links ap
 
 ## 001 — root nodes
 
-| Id | Title | Depends on | Branch | Issue | State | Round |
-| --- | --- | --- | --- | --- | --- | --- |
-| 01 | Product and trust model | — | — | — | queued | — |
-| 02 | Business model, competition and positioning | 01 | — | — | queued | — |
-| 03 | Arena design: tracks, entrants, MVP scope | — | — | — | queued | — |
-| 04 | Test cases | 03 | — | — | queued | — |
-| 05 | Scoring trust and eval methodology | 03 | — | — | queued | — |
-| 06 | House optimizer design | 05 | — | — | queued | — |
-| 07 | Architecture, build plan and costs | 04, 05 | — | — | queued | — |
-| 08 | Community and open-source strategy | 02 | — | — | queued | — |
+| Id | Title | Priority | Depends on | Branch | Issue | State | Round |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 01 | Product and trust model | 6 | — | — | — | queued | — |
+| 02 | Business model, competition and positioning | 7 | 01 | — | — | queued | — |
+| 03 | Arena design: tracks, entrants, MVP scope | 1 | — | — | — | queued | — |
+| 04 | Test cases | 3 | 03 | — | — | queued | — |
+| 05 | Scoring trust and eval methodology | 2 | 03 | — | — | queued | — |
+| 06 | House optimizer design | 5 | 05 | — | — | queued | — |
+| 07 | Architecture, build plan and costs | 4 | 04, 05 | — | — | queued | — |
+| 08 | Community and open-source strategy | 8 | 02 | — | — | queued | — |

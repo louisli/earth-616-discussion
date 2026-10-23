@@ -11,11 +11,9 @@ label "state:queued"      "c5def5" "Waiting for dependencies or its turn"
 label "state:turn"        "0e8a16" "A discussion bot is writing; see turn:"
 label "state:ballot"      "fbca04" "Orchestrator builds the ballot"
 label "state:voting"      "fbca04" "Bots voting; see vote:"
-label "state:tally"       "fbca04" "Orchestrator counts votes"
 label "state:audit"       "5319e7" "Auditor checks the round"
 label "state:audited"     "5319e7" "Orchestrator applies the outcome"
-label "state:needs-lou"   "d93f0b" "Waiting on Lou"
-label "state:updated-lou" "d93f0b" "Lou answered; orchestrator acts"
+label "state:needs-lou"   "d93f0b" "Waiting on Lou ([need-lou #n] in title)"
 label "state:paused"      "d93f0b" "Round limit reached for this attempt"
 label "state:stuck"       "b60205" "Circuit breaker tripped"
 label "state:leaf"        "0e8a16" "Atomic; waiting for its bundle"
@@ -30,10 +28,10 @@ for b in muse perplexity claude; do
   label "vote:$b"    "1d76db" "$b still owes a vote"
   label "claimed:$b" "ededed" "Lease: a $b run is working on this"
 done
-label "claimed:orchestrator" "ededed" "Lease: orchestrator run in progress"
 label "claimed:auditor"      "ededed" "Lease: auditor run in progress"
 
 # qualifiers
+label "bot-error" "b60205" "A bot or the auditor hit an error here; orchestrator clears it"
 label "soft-go" "f9d0c4" "Accepted with an attached dissent"
 for d in 0 1 2 3 4 5; do label "depth:$d" "f5f5f5" "Tree depth $d"; done
 label "kind:topic" "0052cc" "Topic Issue"

@@ -2,6 +2,7 @@
 topic: "001"
 title: Architecture, build plan and costs
 status: seed
+priority: 4
 depends_on: ["04", "05"]
 updated: 2026-10-22
 ---

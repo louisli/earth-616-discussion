@@ -2,6 +2,7 @@
 topic: "001"
 title: "Arena design: tracks, entrants, MVP scope"
 status: seed
+priority: 1
 depends_on: []
 updated: 2026-10-22
 ---

@@ -2,6 +2,7 @@
 topic: "001"
 title: Business model, competition and positioning
 status: seed
+priority: 7
 depends_on: ["01"]
 updated: 2026-10-22
 ---

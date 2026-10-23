@@ -36,7 +36,7 @@ These are constraints, so don't reopen them.
 | 7 | [Architecture, build plan and costs](seeds/07-architecture-build-costs.md) | 04, 05 |
 | 8 | [Community and open-source strategy](seeds/08-community-open-source.md) | 02 |
 
-**Suggested order:** 3 → 5 → 4 → 7 → 6 → 1 → 2 → 8. Benchmark credibility comes first, because the product builds on it.
+**Priority** (set in each seed, 1 = first): 03 → 05 → 04 → 07 → 06 → 01 → 02 → 08. Benchmark credibility comes first, because the product builds on it.
 
 ## Conflicts to settle
 

@@ -2,6 +2,7 @@
 topic: "001"
 title: House optimizer design
 status: seed
+priority: 5
 depends_on: ["05"]
 updated: 2026-10-22
 ---
