@@ -17,12 +17,30 @@ inbox/ ─▶ topic ─▶ ┌─ ROUND (per node) ─────────�
 
 | Role | Who | Does | Never does |
 | --- | --- | --- | --- |
-| Discussers | Muse, Perplexity, Claude | Research, write versions, vote | Approve leaves; resolve escalations; edit another model's files |
+| Discussers | Muse bot, Perplexity bot, Claude bot (each in its own harness, using `gh`) | Research, write versions, vote | Approve leaves; resolve escalations; edit another model's files |
 | Orchestrator | Bot side (scheduler) | Runs rounds, rotates order, builds blind ballots, tallies votes, applies circuit breakers, commits | Form opinions on content |
 | Auditor | Claude Code | Checks each round against this file; can void a round | Judge whether an idea is good |
 | Owner | Lou | Reviews bundle briefs, resolves escalations, final approval | Review every leaf |
 
 The planner reads **only** `outbox/`.
+
+## 1a. Bot contract
+
+Each bot runs its own model in its own harness and works with this repo only through `git` and `gh`. The process doesn't care how a bot calls its model, which model version it uses, or how it searches. It only defines what a bot reads and writes.
+
+**Each turn, a bot:**
+1. **Syncs and checks its turn.** It pulls the loop branch, then reads `rounds/rNN/order.md` to see whether it's this bot's turn. Its turn has come when it's listed next and the previous bot's files are committed, or the previous slot has timed out.
+2. **Reads only its inputs.**
+    - The topic README (Already decided) and `overrides.md` from `main`
+    - The node's `node.md`
+    - The research files allowed for its position: none for A; A's for B; A's and B's for C
+3. **Writes only its own files** (`research-<model>.md`, `version-<model>.md` or `vote-<model>.md`) in the section 4a formats.
+4. **Commits and pushes** under its own git identity, with message `<node> r<NN> <model> <version|vote>`. If the push is rejected, it pulls with rebase and pushes again. Conflicts can't happen, because no other bot writes its files.
+5. **Doesn't touch** `node.md`, ballots, results, Issues, PRs or `main`. Those belong to the orchestrator.
+
+**Research.** Bots research with whatever their harness offers. A bot with no live web access says so in `research-<model>.md`, and cites only research ids from other bots' files (for example `A.R2`).
+
+**Voting is blind by instruction.** A bot votes from `ballot/` only, and doesn't open `version-*` files or the git history for that round until its vote is pushed. The repo is shared, so this can't be enforced technically. Shuffled A/B/C labels still remove order bias, and the auditor flags any vote whose reasons quote a version file instead of the ballot.
 
 ## 2. Schedule
 
@@ -254,7 +272,7 @@ All three models must vote "atomic" (3/3). A 2/3 vote means one more round.
 | Depth | > 4 levels |
 | Ping-pong | New accepted version matches an earlier `version_hashes` entry |
 | Child = parent | Child ≥ ~90% similar to its parent |
-| Node budget | Token cap per node (set per topic) |
+| Node budget | Token cap per node, only if the bot's harness reports usage (optional) |
 | Tree size | > 50 nodes per topic |
 
 The round limit is not a breaker: hitting it pauses the node (section 2). Breakers are kept across attempts; `/rerun` never resets `version_hashes`, so a node that keeps circling is still caught.
