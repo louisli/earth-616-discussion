@@ -142,7 +142,8 @@ Each topic's nodes, rounds, ballots and audits live on its loop branches, `loop/
 | --- | --- |
 | Rulebook (`AGENTS.md`), labels, topic 001 seeds | ✅ ready (reviewed by an independent pass, and 28 gaps fixed) |
 | Shared bot account (one GitHub machine account) + its token in each harness | ⏳ Lou to create |
-| Orchestrator script + GitHub Action | ✅ built and tested; rounds are switched off (`start_rounds: false`) until the bots check in |
+| Orchestrator script + GitHub Action | ✅ built and tested (15 tests, incl. a full simulated run of topic 001). The workflow is **paused**: GitHub Actions won't start jobs while the account has a billing lock. Rounds are also off (`start_rounds: false`) until the bots check in. |
+| `ORCH_SECRET` repo secret (ballot shuffle) | ⏳ Lou to add |
 | Bot check-ins (`agents/*.md`) | ⏳ none yet; each AI creates its own on first check-in |
 
 ## For the planner
