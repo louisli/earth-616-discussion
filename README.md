@@ -13,7 +13,7 @@ README.md      ← this file
 PROCESS.md     ← the rules every bot and model follows
 MASTER.md      ← master list: every topic, root node and bundle, with status
 TEMPLATE.md    ← starting point for a new topic's root discussions
-inbox/         ← raw material, dropped in as-is
+inbox/         ← parking lot (manual); Lou promotes items into topics/
 outbox/        ← approved plans; the ONLY folder the planner reads
 topics/
   YYYY-MM-<topic>/

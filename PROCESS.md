@@ -50,7 +50,7 @@ The planner reads **only** `outbox/`.
 ## 3. Repo layout
 
 ```
-inbox/                                  raw material, dropped in as-is
+inbox/                                  parking lot: raw material, NOT automated (see 3a)
 outbox/                                 approved plans for the planner
 topics/YYYY-MM-<topic>/
   README.md                             overview + Already decided (constraints)
@@ -115,9 +115,21 @@ issue: 42              # GitHub Issue number mirroring this node
 - **Sub-issues:** a node's children are its sub-issues, so the tree is browsable in GitHub.
 - **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|paused|stuck|escalated|approved|rejected|parked>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
 - **Comments:** one per round: the order, the vote tally per item, the outcome and the audit result.
-- **Escalations:** labeled `needs-lou`. Lou answers with a decision command (section 8b) in an issue comment.
+- **Escalations.** The bot uses a title prefix as the handshake with Lou:
+    1. **Escalate.** The bot adds the `needs-lou` label and puts `[need-lou]` at the start of the Issue title.
+    2. **Reply.** Lou comments with a decision command (section 8b), then changes the prefix to `[updated-lou]`. That prefix is the signal to act.
+    3. **Act.** The bot runs the command, removes the prefix and the label, and comments what it did.
+    - **No valid command.** If the bot finds `[updated-lou]` without a valid command, it reverts the prefix to `[need-lou]` and asks Lou to restate.
+    - **Prefix removed without a command.** If Lou removes the prefix without leaving a command, the bot puts it back.
 - **Closing:** an issue closes when its node is approved (PR merged), or when it splits and all its children are closed.
 - **Source of truth:** Issues are a view. If an issue and the repo disagree, the files win, and the orchestrator re-syncs the issue.
+
+## 3a. Inbox: parking only
+
+- **No automation.** `inbox/` is where anything gets parked: notes, chat dumps, links, half-ideas. No bot reads it, and no loop starts from it.
+- **Promotion is manual.** Lou decides what is ready, then creates the topic folder (`topics/YYYY-MM-<topic>/`) with its `README.md` (Already decided) and seed discussions. This can be done alone or in a chat with Claude.
+- **Promoted items leave the inbox.** They are moved, not copied, so the inbox only holds what hasn't been decided yet.
+- **Planned change.** If promotion is ever automated, a separate intake process goes *before* the inbox. The inbox itself stays manual.
 
 ## 4. A round, step by step
 
@@ -125,7 +137,7 @@ issue: 42              # GitHub Issue number mirroring this node
 2. **Model B** reads the same inputs plus A's research. It writes its own research and version. **It must state where it agrees and disagrees with A, and why.**
 3. **Model C** reads the same inputs plus A's and B's research. It writes its research and version, stating its agreements and disagreements with both.
 4. **Blind vote.**
-    - The orchestrator splits each version into **items** (each proposed sub-idea, decision or claim), anonymizes the versions as A/B/C and shuffles them.
+    - The orchestrator lines the versions up **by item id** (section 4a). This is mechanical, because every version uses the required format. It then anonymizes the versions as A/B/C and shuffles them.
     - Each model votes **per item**: which version's treatment it prefers, or "none," with one line of reason.
     - Models vote without seeing each other's votes.
 5. **Tally per item:**
@@ -139,6 +151,85 @@ issue: 42              # GitHub Issue number mirroring this node
 
 6. **Audit** (section 7). A voided round is discarded for the affected node.
 7. **Atomic test** (section 5) on the updated node. The outcome is **leaf**, **split** into children (each starting at round 1), or **revise** (another round).
+
+## 4a. Required formats
+
+Models must write in these formats, so the orchestrator can line items up and tally votes **without judging content**. A file that doesn't parse forfeits that model's turn for the round, and the auditor logs it.
+
+**Item ids are stable.**
+- Accepted items in `node.md` have ids `I1, I2, …`. An id never changes or gets reused for something else.
+- In a round, a model must address **every existing id**: keep and treat it, or drop it with a reason.
+- A model adds new items as `NEW1, NEW2, …`. The orchestrator assigns the next free `I` id after the round.
+- Model B and model C must also address the `NEW` items from earlier models in the same round, using `A.NEW1` style references.
+
+### `research-<model>.md`
+
+```markdown
+---
+node: 03.2
+model: perplexity
+round: 2
+---
+## R1
+claim: <one factual claim>
+source: <url>
+accessed: 2026-10-22
+## R2
+...
+```
+
+### `version-<model>.md`
+
+```markdown
+---
+node: 03.2
+model: muse
+round: 2
+---
+## Summary
+<one sentence: what this node is>
+
+## I1                                  # existing id, or NEW1 / A.NEW1 for new items
+action: keep | drop                   # drop needs a reason
+type: decision | research | build | question | claim
+statement: <one sentence>
+options: [<opt 1>, <opt 2>]           # decision only
+recommendation: <opt>                 # decision only
+reason: <one line>
+evidence: [R1, R3]                    # ids from research files; any model's, e.g. A.R2
+agrees_with: [A, B]                   # B and C only: which earlier versions this matches
+disagrees_with: [A]                   # B and C only, each with a reason below
+disagreement_reason: <one line>
+split_into: [<child title>, ...]      # optional: proposes this item becomes child nodes
+
+## Atomic
+verdict: leaf | split | revise
+failed_tests: [1, 4]                  # numbers from section 5, if not leaf
+```
+
+### Ballot (orchestrator builds it)
+
+There is one block per item id. Each block shows up to three treatments labeled A/B/C in shuffled order. A version that dropped the item appears as `dropped: <reason>`.
+
+### `vote-<model>.md`
+
+```markdown
+---
+node: 03.2
+model: claude
+round: 2
+---
+I1: B — <one-line reason>
+I2: none — <reason>                   # none = no treatment is acceptable
+I3: drop — <reason>                   # vote to remove the item
+NEW1: A — <reason>
+atomic: leaf | split | revise — <reason>
+```
+
+**Tally rules.** These are applied per item, and the section 4 table applies.
+- **Same letter, or both `drop`:** counts as agreement.
+- **`none`:** counts as support for no version.
+- **3-way split:** escalates.
 
 ## 5. Atomic test: a node is a leaf only if all 5 pass
 
@@ -169,7 +260,8 @@ A stuck node goes to `escalations.md` with its last 2–3 versions, the breaker 
 - [ ] Every factual claim in `research-*` has a source.
 - [ ] B referenced A's research; C referenced both; each stated its agreements and disagreements.
 - [ ] Ballots were anonymized, and `key.md` was committed after all votes.
-- [ ] Every vote has a reason.
+- [ ] Every vote has a reason, and every file matches the formats in section 4a.
+- [ ] Every existing item id was addressed (kept or dropped with a reason) by every version.
 - [ ] The tally matches the votes.
 - [ ] Nothing contradicts the topic's **Already decided** without being escalated.
 - [ ] The atomic test was applied to any node marked `leaf`.
