@@ -28,15 +28,13 @@ The planner reads **only** `outbox/`.
 
 Each bot runs its own model in its own harness and works with this repo only through `git` and `gh`. The process doesn't care how a bot calls its model, which model version it uses, or how it searches. It only defines what a bot reads and writes.
 
-**Each turn, a bot:**
-1. **Syncs and checks its turn.** It pulls the loop branch, then reads `rounds/rNN/order.md` to see whether it's this bot's turn. Its turn has come when it's listed next and the previous bot's files are committed, or the previous slot has timed out.
-2. **Reads only its inputs.**
-    - The topic README (Already decided) and `overrides.md` from `main`
-    - The node's `node.md`
-    - The research files allowed for its position: none for A; A's for B; A's and B's for C
-3. **Writes only its own files** (`research-<model>.md`, `version-<model>.md` or `vote-<model>.md`) in the section 4a formats.
-4. **Commits and pushes** under its own git identity, with message `<node> r<NN> <model> <version|vote>`. If the push is rejected, it pulls with rebase and pushes again. Conflicts can't happen, because no other bot writes its files.
-5. **Doesn't touch** `node.md`, ballots, results, Issues, PRs or `main`. Those belong to the orchestrator.
+**Each run, a bot follows its runbook** (`runbooks/discussion-bot.md`). In short:
+
+1. **Find work.** List Issues labeled `vote:<me>` or `turn:<me>` (`STATE.md`). These labels are the only way a bot knows it has work.
+2. **Claim and read.** Claim one Issue, then read only the inputs its position allows.
+3. **Write.** Write only its own files, in the section 4a formats.
+4. **Commit and push** under its own git identity. If the push is rejected, it pulls with rebase and pushes again.
+5. **Hand off.** Swap labels to hand off to the next bot, then exit.
 
 **Research.** Bots research with whatever their harness offers. A bot with no live web access says so in `research-<model>.md`, and cites only research ids from other bots' files (for example `A.R2`).
 
@@ -132,12 +130,12 @@ issue: 42              # GitHub Issue number mirroring this node
 - **Title:** `[<topic>] <node-id> <node title>`
 - **Body:** the node's current accepted version, plus links to the branch and `node.md`
 - **Sub-issues:** a node's children are its sub-issues, so the tree is browsable in GitHub.
-- **Labels:** `topic:<topic>`, `depth:<n>`, `status:<in-loop|leaf|split|paused|stuck|escalated|approved|rejected|parked>`, `soft-go` while a dissent is attached, `needs-lou` for escalations
+- **Labels:** one `state:` label (the workflow state), plus `turn:` / `vote:` / `claimed:` while bots work, `topic:<topic>`, `depth:<n>` and `soft-go`. The full list is in `STATE.md`.
 - **Comments:** one per round: the order, the vote tally per item, the outcome and the audit result.
 - **Escalations.** The bot uses a title prefix as the handshake with Lou:
-    1. **Escalate.** The bot adds the `needs-lou` label and puts `[need-lou]` at the start of the Issue title.
+    1. **Escalate.** The bot adds the `state:needs-lou` label and puts `[need-lou]` at the start of the Issue title.
     2. **Reply.** Lou comments with a decision command (section 8b), then changes the prefix to `[updated-lou]`. That prefix is the signal to act.
-    3. **Act.** The bot runs the command, removes the prefix and the label, and comments what it did.
+    3. **Act.** The bot runs the command, removes the prefix, sets the new `state:` label, and comments what it did.
     - **No valid command.** If the bot finds `[updated-lou]` without a valid command, it reverts the prefix to `[need-lou]` and asks Lou to restate.
     - **Prefix removed without a command.** If Lou removes the prefix without leaving a command, the bot puts it back.
     - **Repeat cycles are normal.** A node can go `[need-lou]` → `[updated-lou]` → back into rounds → `[need-lou]` again, any number of times.
@@ -146,7 +144,7 @@ issue: 42              # GitHub Issue number mirroring this node
         - **Cycle comment.** Each cycle gets one bot comment: what was escalated, what Lou decided, and what happened next. Reading the comments top-down tells the full story.
         - **Flag at 3+.** From the third cycle, the escalation comment adds a line noting that this node keeps coming back to Lou, and suggests `/reword`, `/pick` or `/park`. Nothing is forced; it's a prompt to try a different move instead of `/rerun` again.
 - **Closing:** an issue closes when its node is approved (PR merged), or when it splits and all its children are closed.
-- **Source of truth:** Issues are a view. If an issue and the repo disagree, the files win, and the orchestrator re-syncs the issue.
+- **Source of truth:** workflow state lives in Issue labels; content lives in files. See `STATE.md` for the labels, and `runbooks/` for what each role does in each state.
 
 ## 3a. Inbox: parking only
 

@@ -12,6 +12,9 @@ This repo holds **discussions only**. No code, no specs. Three models (Muse, Per
 README.md      ← this file
 PROCESS.md     ← the rules every bot and model follows
 MASTER.md      ← master list: every topic, root node and bundle, with status
+STATE.md       ← the state machine: Issue labels that tell stateless bots what to do
+runbooks/      ← step-by-step procedure per role (discussion bot, orchestrator, auditor)
+scripts/       ← setup-labels.sh creates every label in STATE.md
 TEMPLATE.md    ← starting point for a new topic's root discussions
 inbox/         ← parking lot (manual); Lou promotes items into topics/
 outbox/        ← approved plans; the ONLY folder the planner reads
