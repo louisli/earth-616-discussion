@@ -20,7 +20,7 @@ This repo holds **discussions only**: no code, no specs.
     ```
 
     - **No access, or read-only:** stop and tell Lou exactly what failed.
-    - **Bots and the auditor** must be logged in to their **own** GitHub account or token, never Lou's. That's how comments by `louisli` are known to be Lou's.
+    - **Bots and the auditor** must be logged in as the **shared bot account**, never as `louisli`. That's how comments by `louisli` are known to be Lou's.
 2. **Read [`AGENTS.md`](AGENTS.md).** It's the one rulebook every AI follows, and there are no other rule files. Begin with **section 14 (check-in)**. It walks you through:
     - **Know your role.** If Lou didn't name it, ask him: *muse, perplexity, claude, auditor, or intake?*
     - **Set up your workspace,** every run: clone, git auth, and the git identity `<role>-bot`. You have no memory of earlier runs.
@@ -137,7 +137,7 @@ Each topic's nodes, rounds, ballots and audits live on its loop branches, `loop/
 | Piece | Status |
 | --- | --- |
 | Rulebook (`AGENTS.md`), labels, topic 001 seeds | ✅ ready (reviewed by an independent pass, and 28 gaps fixed) |
-| A GitHub account or token for each bot and the auditor | ⏳ needed: they must not use Lou's |
+| Shared bot account (one GitHub machine account) + its token in each harness | ⏳ Lou to create |
 | Orchestrator script + GitHub Action | ⏳ not built yet |
 | Bot check-ins (`agents/*.md`) | ⏳ none yet; each AI creates its own on first check-in |
 

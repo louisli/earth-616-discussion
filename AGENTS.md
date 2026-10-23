@@ -15,7 +15,7 @@
 5. **One task per run.** Do one task, release your lock, and exit.
 6. **No guessing.** If labels, files and this rulebook disagree, report it as a bot error (section 11, "On any failure") and stop. Never improvise a fix.
 7. **Keep personal and employer details out.** Don't write details that identify Lou personally, or anything about his employer, unless Lou explicitly includes them for that topic.
-8. **Your own GitHub identity.** Every bot and the auditor act on GitHub under their **own** account or token, never Lou's. This is what makes "comments by `louisli`" mean Lou.
+8. **Never Lou's GitHub identity.** Bots and the auditor act on GitHub through the **shared bot account** (a GitHub machine account Lou owns), never through `louisli`. The orchestrator acts as `github-actions[bot]`. This is what makes "comments by `louisli`" mean Lou. Bots tell each other apart by role, in their lock comments, error comments and git author names (`<role>-bot`), not by GitHub login.
 
 ## 1. Glossary
 
@@ -38,9 +38,9 @@
 
 | Role | Who | Sections to follow | Writes |
 | --- | --- | --- | --- |
-| **Discussion bot** | `muse`, `perplexity`, `claude` (Claude chat, driven by the Grok bot). Each works through `git`/`gh` in whatever harness runs it, under its own GitHub identity. | 0, 1, 3, 5, 6, 7, 8, **11**, **14** | `research-<me>.md`, `version-<me>.md`, `vote-<me>.md`, `agents/<me>.md`; its own `turn:`, `vote:` and `claimed:` labels; `bot-error`; its lock comment |
+| **Discussion bot** | `muse`, `perplexity`, `claude` (Claude chat, driven by the Grok bot). Each works through `git`/`gh` in whatever harness runs it, logged in as the shared bot account. | 0, 1, 3, 5, 6, 7, 8, **11**, **14** | `research-<me>.md`, `version-<me>.md`, `vote-<me>.md`, `agents/<me>.md`; its own `turn:`, `vote:` and `claimed:` labels; `bot-error`; its lock comment |
 | **Orchestrator** | A script run as a scheduled GitHub Action, with only one run at a time. No model, no opinions. | All, especially **12** | Everything else on loop and bundle branches and on `main` (`node.md`, ballots, results, `MASTER.md`, `tree.md`, `overrides.md`, `outbox/`, folder moves), plus all Issues, labels, titles and PRs |
-| **Auditor** | Claude Code, under its own GitHub identity | 0, 1, 3, 5, 6, 7, 8, **13**, **14** | `audit.md`, `audit-log.md`, `agents/auditor.md`; `claimed:auditor`; `state:audit` → `state:audited`; `bot-error` |
+| **Auditor** | Claude Code, logged in as the shared bot account | 0, 1, 3, 5, 6, 7, 8, **13**, **14** | `audit.md`, `audit-log.md`, `agents/auditor.md`; `claimed:auditor`; `state:audit` → `state:audited`; `bot-error` |
 | **Intake partner** | Any AI helping Lou in a live chat | 0, 1, 3, **4**, **14** | New topic folder files and the new topic's row in `MASTER.md`, only after Lou says **go** |
 | **Owner** | Lou (`louisli`) | Everything | Decision commands, the `[updated-lou]` title prefix, PR merges, anything else he chooses |
 | **Planner** | Separate system | `outbox/` only | Nothing in this repo |
@@ -651,7 +651,7 @@ gh api user --jq .login
 ```
 
 - **No access, or permission below `WRITE`:** stop and tell Lou exactly what failed.
-- **Logged in as `louisli`:** you're a bot or auditor running on Lou's own identity (rule 0.8). Stop and tell Lou you need your own GitHub account or token. An intake partner in a live chat with Lou may continue.
+- **Logged in as `louisli`:** you're a bot or auditor running on Lou's own identity (rule 0.8). Stop and tell Lou you need the shared bot account's token. An intake partner in a live chat with Lou may continue.
 
 ### 14.2 Role
 
