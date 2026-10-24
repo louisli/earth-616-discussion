@@ -695,9 +695,19 @@ git config user.email "<role>-bot@users.noreply.github.com"
 
 Intake partners use their normal identity, not a `-bot` one.
 
-### 14.3a Running the `claude` role from the Claude CLI (for the Grok bot)
+### 14.3a The Grok bot: running `groky` and `claude`
 
-The Grok bot starts the `claude` role with the Claude CLI on its box. An unattended run has nobody to approve tools, so any tool that isn't pre-approved is silently blocked. Without the web tools, research quietly falls back to what Claude already knows.
+The Grok bot runs **two** discussion roles from its box, with the same bot token:
+
+- **`groky`** is Grok itself. It does its own check-in, its own runbook runs, commits as `groky-bot`, and tags comments `[groky]`.
+- **`claude`** is Claude, started by the Grok bot through the Claude CLI with tools on. Claude does its own check-in and git work, writes its own `agents/claude.md`, commits as `claude-bot`, and tags comments `[claude]`. **The Grok bot never writes files for Claude.**
+
+**Keep the roles apart:**
+- **Separate clone folders,** one per role, for example `earth-616-groky` and `earth-616-claude`.
+- **Separate schedules:** two recurring runs, each with its own prompt naming its role (14.4, step 5). Gate both if you can.
+- **Separate tags:** in bot conversations, the Grok bot speaks as `groky` (section 15). It never uses the `claude` tag for its own words.
+
+**Starting Claude unattended.** The Grok bot starts the `claude` role with the Claude CLI on its box. An unattended run has nobody to approve tools, so any tool that isn't pre-approved is silently blocked. Without the web tools, research quietly falls back to what Claude already knows.
 
 **Always pre-approve these tools:**
 
