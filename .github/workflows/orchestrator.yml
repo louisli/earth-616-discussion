@@ -1,14 +1,15 @@
 name: orchestrator
 
-# AGENTS.md section 12 and 14.7. Times are US Eastern (GitHub converts, DST included); one run at a time.
-# Schedule registered 2026-10-24 (re-pushed so GitHub picks it up after the workflow was re-enabled).
-# :55 of every odd hour = prep for the next cycle; :00 = prep fallback; :25 = review sheets; :47 = tally.
+# AGENTS.md section 12 and 14.7. One run at a time.
+# Times are UTC: the `timezone:` key never fired here, so these are plain UTC crons.
+# While New York is on EDT (UTC-4), UTC even hours = ET even hours:
+#   :55 of every odd hour = prep for the next cycle; :00 = prep fallback; :25 = review sheets; :47 = tally.
+# When New York switches to EST (UTC-5, first Sunday of November), swap the hour lists:
+#   '55 0-22/2 * * *' and '0,25,47 1-23/2 * * *'. Switch back in March.
 on:
   schedule:
     - cron: '55 1-23/2 * * *'
-      timezone: 'America/New_York'
     - cron: '0,25,47 0-22/2 * * *'
-      timezone: 'America/New_York'
   workflow_dispatch:
     inputs:
       dry_run:
