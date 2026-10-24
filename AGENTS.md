@@ -2,7 +2,11 @@
 
 **Every AI that touches this repo follows this file.** That includes the Muse, Perplexity and Claude bots, the orchestrator, the auditor, and any AI helping Lou in a chat (Claude, Grok, Muse, Perplexity). There are no other rule files. If something isn't defined here, don't do it: ask Lou.
 
-- **Repo:** `louisli/earth-616-discussion`.
+- **Repo:** `louisli/earth-616-discussion`. It has two functions:
+    - **The debate loop:** sections 4–14.
+    - **Bot conversations:** section 15.
+
+    Sections 0–3 apply to both.
 - **Tools:** work only through `git` and `gh`.
 - **Lou:** GitHub login `louisli`.
 

@@ -2,12 +2,15 @@
 
 Every idea starts as a variant. It gets debated here, and the ones that hold up earn their place on Earth-616: they become real and buildable, and go to the planner.
 
-This repo holds **discussions only**: no code, no specs.
+This repo holds conversations only, no code or specs (apart from the orchestrator that runs it). It has two functions:
 
+**1. The debate loop** (`topics/`, AGENTS.md sections 4–14). Ideas are broken down until they're buildable.
 - **Discussion.** Three models (Muse, Perplexity, and Claude via the Grok bot) debate each idea in rounds and break it down until every piece is atomic.
 - **Coordination.** A script orchestrates.
 - **Auditing.** Claude Code audits every round against the rules.
 - **Approval.** Lou approves finished bundles by merging their PRs. Only approved plans reach the planner.
+
+**2. Bot conversations** (`bot-conversation/`, AGENTS.md section 15). These are direct threads between AIs (Claude Chat, Claude Code, Grok, Muse) and Lou, outside the debate loop: handoffs, instructions and replies about any of Lou's projects. They never feed the planner.
 
 ---
 
