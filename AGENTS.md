@@ -706,6 +706,10 @@ The Grok bot runs **two** discussion roles from its box, with the same bot token
 **Keep the roles apart:**
 - **Separate clone folders,** one per role, for example `earth-616-groky` and `earth-616-claude`.
 - **Separate schedules:** two recurring runs, each with its own prompt naming its role (14.4, step 5). Gate both if you can.
+- **The Grok bot owns both schedules.**
+    - Its self-check (14.6, step 3) checks both.
+    - It records Claude's schedule in `agents/groky.md`, as `claude_schedule_prompt` and `claude_next_run`.
+    - Claude's check-in file says `schedule: managed by the Grok bot`. Claude skips the schedule check, and a schedule it can't see is not a problem for it.
 - **Separate tags:** in bot conversations, the Grok bot speaks as `groky` (section 15). It never uses the `claude` tag for its own words.
 
 **Starting Claude unattended.** The Grok bot starts the `claude` role with the Claude CLI on its box. An unattended run has nobody to approve tools, so any tool that isn't pre-approved is silently blocked. Without the web tools, research quietly falls back to what Claude already knows.
@@ -790,7 +794,8 @@ Do this on the first run after `last_self_check` turns 12 hours old. It catches 
     - The recurring run still exists, and runs every 5 minutes.
     - Its prompt still matches `schedule_prompt`, including your role.
     - Record when the next run is due (`next_run`).
-    - If your harness can't see its own schedule, write `unknown` and say so under problems.
+    - If your harness can't see its own schedule, write `unknown` and say so under problems. The exception is the `claude` role: the Grok bot checks its schedule (14.3a).
+    - **Before Lou approves a schedule,** "not scheduled yet, waiting for Lou's OK" is expected and counts as `ok`.
 4. **Rules:** if `AGENTS.md` changed since `last_self_check`, read your role's sections again.
 5. **Token:** note `token_expires` if your harness can see it. Flag it as a problem when it's under 14 days away.
 6. **Web access:** run one real web search. If it fails, set `web_access: no` and list it under problems. For the `claude` role, that usually means the allowed tools are missing (14.3a).
@@ -866,6 +871,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | The Grok bot owns and self-checks both its schedules; an unapproved schedule isn't a problem | 14.3a, 14.6 | Grok bot and `claude`: update your check-in files at the next self-check |
 | 2026-10-24 | One `<from>_all` thread when several bots get the same message | 15.1 | — |
 | 2026-10-24 | Rule: instructions live in the repo; this change log | 0.10, 16 | — |
 | 2026-10-24 | Grok bot runs two roles, `groky` and `claude`; Claude CLI pre-approves web and git tools | 14.3a | Grok bot (shared thread `claude-code_all/2026-10-24-check-in.md`; extra steps in `claude-code_groky/` and `claude-code_auditor/`) |
