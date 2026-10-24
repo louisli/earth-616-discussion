@@ -9,6 +9,8 @@ import { cycleAt, nextCycleId, cycleOrdinal, WORK_END, REVIEW_START, REVIEW_END 
 const TOPIC_STATES = ['active', 'done', 'parked', 'rejected'];
 const OPEN_TASK_STATES = ['approved', 'blocked', 'more-review', 'rework', 'needs-lou'];
 const C = (msg) => `[orchestrator] ${msg}`;
+/** Proposal-level comments go to every task that needs rework, so the author sees them. */
+const r0 = (comments, cycle) => comments.map((c) => `${cycle} proposal — ${c}`);
 
 export class Orchestrator {
   constructor({ gh, git, config, secret = '', now = () => new Date(), log = console.log }) {
@@ -591,10 +593,14 @@ export class Orchestrator {
     // votes
     const votes = {};
     const missed = [];
+    const proposalComments = [];
     for (const b of rv.sheets) {
       const text = ctx.wt.read(`${cdir}/review-${b}.md`);
       const r = text ? F.parseReview(text, { item: ctx.id, bot: b, cycle }) : { ok: false, error: 'missing' };
-      if (r.ok) votes[b] = r.votes;
+      if (r.ok) {
+        votes[b] = r.votes;
+        if (r.proposal) proposalComments.push(`${b}: ${r.proposal}`);
+      }
       else missed.push(`${b} review (${r.error})`);
     }
     const day = isoDate(this.now());
@@ -604,7 +610,7 @@ export class Orchestrator {
       const vs = reviewers.map((r) => votes[r]?.[task.id] ?? null);
       const reworks = task.rework ? task.t.reworks : 0;
       const outcome = tallyOutcome(vs, reworks);
-      const changes = [];
+      const changes = ['more-review', 'blocked'].includes(outcome) ? r0(proposalComments, cycle) : [];
       reviewers.forEach((r, k) => {
         const v = vs[k];
         if (v?.vote === 'maybe') changes.push(`${cycle} ${r} (maybe): ${v.changes || v.reason || '(no change given)'}`);
@@ -648,7 +654,7 @@ export class Orchestrator {
     for (const w of a.work.filter((w) => w.what === 'breakdown')) if (!rv.fresh || !Object.values(rv.fresh).includes(w.bot)) missed.push(`${w.bot} breakdown`);
     const result = `# Result — ${ctx.nnn}/${ctx.id} cycle ${cycle}\n\n${sum}.\n\n| Task | Author | Rework | Votes | Outcome | Title |\n| --- | --- | --- | --- | --- | --- |\n${results
       .map((r) => `| ${r.t.task} | ${r.t.author} | ${r.rework ? r.t.reworks : '—'} | ${r.voteText} | **${r.outcome}** | ${mdEscapeCell(r.t.title)} |`)
-      .join('\n')}\n${missed.length ? `\nMissed: ${missed.join('; ')}\n` : ''}`;
+      .join('\n')}\n${proposalComments.length ? `\n## Comments on the proposal\n\n${proposalComments.map((c) => `- ${c}`).join('\n')}\n` : ''}${missed.length ? `\nMissed: ${missed.join('; ')}\n` : ''}`;
     ctx.wt.write(`${cdir}/result.md`, result);
     ctx.item.cycles.push(`${cycle}: ${a.author ? `author ${a.author}; ` : ''}${sum}`);
     ctx.saveItem();
@@ -687,6 +693,7 @@ export class Orchestrator {
     if (!force && !a.work.every(present)) return;
 
     const fresh = []; // { id, author, ...task }
+    let proposal = null;
     const reworks = []; // { id, author, ...task, changes, response }
     const problems = [];
     for (const w of a.work) {
@@ -698,7 +705,9 @@ export class Orchestrator {
           continue;
         }
         for (const t of b.tasks) fresh.push({ id: `T${ctx.item.fm.next_task++}`, author: w.bot, ...t });
-        if (b.truncated) problems.push(`${w.bot} breakdown had more than ${F.MAX_TASKS} tasks; only the first ${F.MAX_TASKS} count`);
+        if (b.unbranched.length) problems.push(`${w.bot} breakdown: ${b.unbranched.length} leaves with no matching branch`);
+        proposal = { concept: b.concept, branches: b.branches };
+        ctx.item.concept = `${b.concept}\n\n${b.branches.map((x) => `- **${x.id} ${x.title}:** ${x.description}`).join('\n')}\n\n_From ${w.bot}'s proposal, cycle ${cycle}._`;
       } else {
         const text = ctx.wt.read(`${cdir}/rework-${w.task}-${w.bot}.md`);
         const r = text ? F.parseRework(text, { item: ctx.id, task: w.task, bot: w.bot }) : { ok: false, error: 'missing' };
@@ -719,7 +728,7 @@ export class Orchestrator {
       const f = fresh.filter((t) => t.author !== reviewer);
       const rw = reworks.filter((t) => t.author !== reviewer);
       if (!f.length && !rw.length) continue;
-      ctx.wt.write(`${cdir}/review-sheet-${reviewer}.md`, F.renderSheet({ topic: ctx.nnn, item: ctx.id, cycle, reviewer, fresh: f, reworks: rw }));
+      ctx.wt.write(`${cdir}/review-sheet-${reviewer}.md`, F.renderSheet({ topic: ctx.nnn, item: ctx.id, cycle, reviewer, fresh: f, reworks: rw, proposal }));
       sheets.push(reviewer);
     }
     if (!sheets.length) {

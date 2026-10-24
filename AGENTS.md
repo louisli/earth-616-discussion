@@ -37,8 +37,9 @@
 | **Topic** | An idea promoted from the inbox. It has a permanent number `NNN`, a folder, a topic Issue, and a **target**: the repo and folder its approved ideas go to. |
 | **Item** | One thing to break down. Each seed of a topic (`seeds/NN-*.md`) is one item, with id `NN` and an item Issue. |
 | **Cycle** | One 45-minute working block, starting at every even hour: 00:00, 02:00 … 22:00. Its id is `YYYY-MM-DD-HH`, for example `2026-10-24-02`. |
-| **Breakdown** | The assigned bot's list of finished, atomic tasks for an item, each with a short description, written in the work window of a cycle (7.2). |
-| **Task** | One entry of a breakdown. It gets an id `T<n>` within its item (`03-T4`), and a task Issue once it has been reviewed. |
+| **Breakdown** | The assigned bot's proposal for an item, as one whole tree written in the work window of a cycle (7.2): the **concept** (what the item becomes), its **branches** (the parts), and the **leaves** under each branch (the atomic tasks, each with a short description). |
+| **Leaf** | A finished, atomic piece of a breakdown, the same thing as a task. Only leaves are voted on, reworked and exported; the concept and branches travel with them as context. |
+| **Task** | One leaf of a breakdown. It gets an id `T<n>` within its item (`03-T4`), and a task Issue once it has been reviewed. |
 | **Author** | The bot assigned to an item, whose breakdown its tasks came from. **Each item has one author at a time** (5.2). |
 | **Review** | A bot's vote on each task written by the other two bots: `yes`, `no` or `maybe` with requested changes (7.4). |
 | **Rework** | The author revising a task in a later cycle, applying the requested changes (7.3). |
@@ -172,7 +173,7 @@ Promotion happens only in a **live session with Lou**, with any one AI as partne
 | Minutes | Window | What happens |
 | --- | --- | --- |
 | before :00 | prep | The orchestrator chooses this cycle's work and writes the assignments (5.2) |
-| :00–:25 | **work** | Each bot breaks down the item assigned to it, and reworks its own tasks that came back. 25 minutes of work, then 5 minutes idle. **Commit by :25.** |
+| :00–:25 | **work** | Each bot breaks down the item assigned to it into a concept, branches and at least 3 leaves (7.2), and reworks its own tasks that came back. 25 minutes of work, then 5 minutes idle. **Commit by :25.** |
 | :25–:30 | — | The orchestrator builds the review sheets as soon as all work is in, and by :30 at the latest |
 | :30–:45 | **review** | Each bot reviews the tasks the other two wrote this cycle. **Commit by :45.** |
 | :45 | tally | The orchestrator counts the votes, opens task Issues and moves every task to its next state (7.5) |
@@ -193,7 +194,7 @@ That makes 12 cycles a day. A file committed after its deadline is ignored. A bo
 
 ### 5.3 Reviews are open
 
-Every reviewer can see which bot wrote what: the mapping is public. Reviewers judge the tasks against the topic README, the atomic test (8.1) and the item's goal, not the author.
+Every reviewer can see which bot wrote what: the mapping is public. Reviewers judge the leaves against the topic README, the atomic test (8.1), the item's goal and the proposal's concept, not the author. The sheet shows the whole tree, so a vote can also say a leaf sits in the wrong branch or that the concept is missing a part.
 
 - **Your sheet is enough.** You don't need to open the author's breakdown file.
 - **Never coordinate a vote** with another bot.
@@ -276,9 +277,15 @@ author: groky
 - **For an item with tasks back for rework,** the work section lists them instead, for example `- groky: rework T4`.
 - **The review section** is added when the sheets are built. It lists the other two bots.
 
-### 7.2 `breakdown-<bot>.md`
+### 7.2 `breakdown-<bot>.md`: one proposal, as a tree
 
-In your 25 minutes, research the item (with sources, if you have web access), break it down, refine it, and break it down again, until **every task passes the atomic test (8.1)**. Output only those finished tasks, **at most 10**.
+In your 25 minutes, research the item (with sources, if you have web access), break it down, refine it, and break it down again. Hand in the whole result as **one proposal**:
+
+- **Concept** (the root): what the item becomes, in one short paragraph, and how the branches fit together.
+- **Branches:** the parts of the concept. Each branch is a group, not a task. Use as many as the item needs.
+- **Leaves:** the atomic tasks, each under exactly one branch. Every leaf must pass the atomic test (8.1). **At least 3 leaves; there's no maximum.** Keep breaking a piece down until it's a leaf: only leaves are tasks.
+
+Together, the leaves must cover the whole concept, so a planner could build the item from them alone.
 
 ```markdown
 ---
@@ -287,20 +294,36 @@ item: "03"
 bot: muse
 cycle: 2026-10-24-02
 ---
-## Summary
-<one sentence: how you broke the item down>
+## Concept
+<one short paragraph: what this item becomes and how the branches fit together>
+
+## B1
+title: <branch title>
+description: <one or two sentences: what this part covers>
+
+## B2
+title: …
+description: …
 
 ## 1
+branch: B1
 title: <short imperative title>
 description: <2–4 sentences: what to do and why, enough for a planner to plan it>
 done_when: <one line: the pass/fail check>
 sources: [<url>, ...]      # optional
 
 ## 2
+branch: B1
+...
+
+## 3
+branch: B2
 ...
 ```
 
-- **Respect Already decided and `overrides.md`.** A task may not contradict them. If you think one is wrong, add a task titled `Question for Lou: …`.
+- **A breakdown with fewer than 3 leaves, or with no concept, counts as missing.**
+- **A leaf whose `branch` doesn't match a `B<n>` section** is still reviewed, but listed under "no branch," and the orchestrator notes it.
+- **Respect Already decided and `overrides.md`.** A leaf may not contradict them. If you think one is wrong, add a leaf titled `Question for Lou: …`.
 - **No duplicates of tasks already approved or exported** for this item (they're listed in `item.md`).
 
 ### 7.3 `rework-T<n>-<bot>.md` (the author only)
@@ -348,6 +371,7 @@ vote: no
 reason: <one line: why it shouldn't be built, e.g. duplicate of T2, out of scope, contradicts Already decided>
 ```
 
+- **Optional `## Proposal` section** with a `comment:` line about the tree as a whole, for example a missing branch. It's recorded in `result.md` and goes to the author with the next rework.
 - **`yes`:** ready to hand to a planner as it stands.
 - **`maybe`:** worth doing, but not as written. `changes` is required.
 - **`no`:** don't build it.
@@ -395,7 +419,10 @@ sources: […]
 
 ## 8. Limits
 
-### 8.1 Atomic test: every task in a breakdown must pass all 5
+### 8.1 Atomic test: every leaf must pass all 5
+
+Branches and the concept don't take the test; they're groups, and the leaves under them do.
+
 
 1. **One sentence.** It can be stated in one sentence with no "and."
 2. **One owner, one outcome.** One agent or person can finish it, with one checkable result.
@@ -407,7 +434,7 @@ sources: […]
 
 | Limit | Value |
 | --- | --- |
-| Tasks per breakdown | at most 10 |
+| Leaves per breakdown | at least 3, no maximum |
 | Reworks per task | 2. Still `more-review` after that → `state:blocked` |
 | New items per cycle | Up to 3, one per bot (reworks are unlimited) |
 | Work deadline | :25 |
@@ -469,7 +496,7 @@ The topic README's **Target** line names the repo and folder, for topic 001: `pr
 - **One note per item per run,** following the target folder's own README. For j-benchmark that's:
     - **Name:** `e6-YYYY-MM-DD-<NNN>-<item>-<slug>.md`
     - **First line:** `Source: Earth 616`
-    - **Then:** the item's goal, and one section per exported task: title, description, done-when, and a link back to the task Issue
+    - **Then:** the item's goal and the proposal's concept, then one section per branch with its exported tasks under it: title, description, done-when, and a link back to the task Issue
 - **Commit it to the target repo's default branch** as `[auditor] earth-616 <NNN>/<item>: <n> ideas`. Its planner turns the note into tickets.
 - **Then in this repo:**
     - Copy the note to `outbox/` on `main`.
@@ -515,7 +542,7 @@ Open `topics/*/NNN-*/items/<item>/cycles/<cycle>/assignments.md`, and find your 
 - For a rework: `tasks/T<n>/task.md` and its requested changes
 
 **Write:**
-- **`breakdown`:** you're this item's author for the cycle. Write `breakdown-<me>.md` (7.2). Spend your time on research and refinement: break the item down, refine the pieces, break them down again, until every task passes the atomic test (8.1).
+- **`breakdown`:** you're this item's author for the cycle. Write `breakdown-<me>.md` (7.2). Spend your time on research and refinement: build the tree (concept, branches, leaves), refine it, and break pieces down again, until every leaf passes the atomic test (8.1).
 - **`rework T<n>`:** write `rework-T<n>-<me>.md` (7.3). Apply each requested change, or say why not.
 
 **Finish by :25.** Something not yet committed by then probably arrives too late to be reviewed (11.6).
@@ -862,6 +889,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Breakdowns are one proposal as a tree: concept → branches → leaves; at least 3 leaves, no maximum (was at most 10 tasks) | 1, 5.1, 7.2, 7.4, 8, 10.2 | `groky`, `claude`, `muse`, `auditor`: same thread, `claude-code_all/2026-10-24-even-hour-cycles.md` |
 | 2026-10-24 | **Even-hour cycles replace rounds.** Every even hour: each bot breaks down its own item, one bot per item, mapped in `assignments.md` (:00–:25); the other two review it with yes / no / maybe (:30–:45), the orchestrator tallies; more-review tasks are reworked by their author up to 2 times, then blocked; the auditor exports approved tasks every 6 hours as ideas to the topic's target repo. Grok and Muse run at :00, :15, :30 of even hours; new cheap check; sessions and session labels removed | 1–14 | `groky`, `claude`, `muse`, `auditor`: thread `claude-code_all/2026-10-24-even-hour-cycles.md` |
 | 2026-10-24 | Grok and Muse run every 15 minutes, acting every 15 minutes only while a round is in progress, otherwise every 2 hours | 14.7, 14.8 | `groky`, `muse`: thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Muse checks every 15 minutes instead of every 2 hours | 14.7 | `muse`: change your cron (thread `claude-code_all/2026-10-24-check-in.md`) |

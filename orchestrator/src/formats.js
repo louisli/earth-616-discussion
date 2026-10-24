@@ -2,9 +2,9 @@
 import YAML from 'yaml';
 import { parseInlineList, renderInlineList, parseFrontmatter, stringifyFrontmatter } from './util.js';
 
-export const MAX_TASKS = 10;
+export const MIN_LEAVES = 3;
 const LIST_KEYS = new Set(['sources']);
-const TASK_FIELDS = ['title', 'description', 'done_when', 'sources'];
+const TASK_FIELDS = ['branch', 'title', 'description', 'done_when', 'sources'];
 
 /** Frontmatter written by bots: every scalar parsed as a string, so "03" survives. */
 export function parseLooseFrontmatter(text) {
@@ -41,7 +41,7 @@ export function parseKV(lines) {
   let last = null;
   for (const raw of lines) {
     const line = raw.replace(/\s+$/, '');
-    if (!line.trim() || /^#/.test(line) || /^<!--/.test(line.trim())) continue;
+    if (!line.trim() || /^[#>]/.test(line) || /^<!--/.test(line.trim())) continue;
     const m = /^([a-z_]+)\s*:\s?(.*)$/.exec(line);
     if (m) {
       last = m[1];
@@ -57,7 +57,7 @@ export function parseKV(lines) {
 const one = (s) => String(s ?? '').replace(/\s*\r?\n\s*/g, ' ').trim();
 
 function taskFieldsMd(t) {
-  const lines = [`title: ${one(t.title)}`, `description: ${one(t.description)}`];
+  const lines = [...(t.branch ? [`branch: ${one(t.branch)}`] : []), `title: ${one(t.title)}`, `description: ${one(t.description)}`];
   if (t.done_when) lines.push(`done_when: ${one(t.done_when)}`);
   if (t.sources?.length) lines.push(`sources: ${renderInlineList(t.sources)}`);
   return lines.join('\n');
@@ -127,6 +127,7 @@ export function parseItem(text) {
     fm: { bot_errors: {}, dead_locks: {}, next_task: 1, ...data },
     goal: (/^\*\*Goal:\*\*\s*(.+)$/m.exec(body)?.[1] ?? '').trim(),
     points: list('starting points'),
+    concept: (secs.find((s) => s.heading.toLowerCase() === 'concept')?.lines ?? []).join('\n').trim(),
     tasks: list('tasks'),
     cycles: list('cycles'),
   };
@@ -140,7 +141,7 @@ export function renderItem(it) {
 ## Starting points
 ${it.points.map((p) => `- ${p}`).join('\n') || '- (none)'}
 
-## Tasks
+${it.concept ? `## Concept\n${it.concept}\n\n` : ''}## Tasks
 <!-- Every task of this item and its state. Don't propose duplicates of approved or exported ones. -->
 ${it.tasks.map((t) => `- ${t}`).join('\n')}
 
@@ -178,14 +179,28 @@ export function parseBreakdown(text, expect = {}) {
   const mismatch = expectMatches(data, expect);
   if (mismatch) return { ok: false, error: mismatch };
   const secs = sections(body);
-  const summary = one((secs.find((s) => /^summary$/i.test(s.heading))?.lines ?? []).join(' '));
+  const concept = one((secs.find((s) => /^(concept|summary)$/i.test(s.heading))?.lines ?? []).join(' '));
+  if (!concept) return { ok: false, error: 'no concept' };
+  const branches = {};
+  for (const s of secs.filter((x) => /^B\d+$/i.test(x.heading))) {
+    const kv = parseKV(s.lines);
+    branches[s.heading.toUpperCase()] = { id: s.heading.toUpperCase(), title: one(kv.title) || s.heading.toUpperCase(), description: one(kv.description) };
+  }
   const tasks = [];
+  const unbranched = [];
   for (const s of secs.filter((x) => /^\d+$/.test(x.heading)).sort((a, b) => Number(a.heading) - Number(b.heading))) {
     const t = pickTask(parseKV(s.lines));
-    if (t.title && t.description) tasks.push(t);
+    if (!t.title || !t.description) continue;
+    const bid = String(t.branch ?? '').trim().split(/\s+/)[0].toUpperCase();
+    if (branches[bid]) t.branch = `${bid} ${branches[bid].title}`;
+    else {
+      t.branch = 'no branch';
+      unbranched.push(t.title);
+    }
+    tasks.push(t);
   }
-  if (!tasks.length) return { ok: false, error: 'no tasks with title and description' };
-  return { ok: true, summary, tasks: tasks.slice(0, MAX_TASKS), truncated: tasks.length > MAX_TASKS };
+  if (tasks.length < MIN_LEAVES) return { ok: false, error: `${tasks.length} leaves with title and description; at least ${MIN_LEAVES} needed` };
+  return { ok: true, concept, branches: Object.values(branches), tasks, unbranched };
 }
 
 export function parseRework(text, expect = {}) {
@@ -215,20 +230,26 @@ export function parseReview(text, expect = {}) {
     if (!VOTES.includes(vote)) continue;
     votes[`T${Number(m[1])}`] = { vote, reason: one(kv.reason), changes: one(kv.changes) };
   }
-  return { ok: true, votes };
+  const prop = sections(body).find((s) => /^proposal$/i.test(s.heading));
+  return { ok: true, votes, proposal: prop ? one(parseKV(prop.lines).comment) : '' };
 }
 
 // ---------- review sheet (orchestrator) ----------
 
-export function renderSheet({ topic, item, cycle, reviewer, fresh, reworks }) {
+export function renderSheet({ topic, item, cycle, reviewer, fresh, reworks, proposal = null }) {
   const fm = { topic, item, cycle, reviewer };
-  let body = `# Review sheet: ${reviewer}\n\nVote on every task below in \`review-${reviewer}.md\` (AGENTS.md 7.4): yes, no, or maybe with the changes you want.\n`;
+  let body = `# Review sheet: ${reviewer}\n\nVote on every leaf (T<n>) below in \`review-${reviewer}.md\` (AGENTS.md 7.4): yes, no, or maybe with the changes you want. Comment on the tree as a whole in an optional \`## Proposal\` section.\n`;
   if (fresh.length) {
-    body += `\n# New tasks (by ${fresh[0].author})\n`;
-    for (const t of fresh) body += `\n## ${t.id}\n${taskFieldsMd(t)}\n`;
+    body += `\n# Proposal by ${fresh[0].author}\n\n# Concept\n> ${one(proposal?.concept) || '(none)'}\n`;
+    const groups = [...new Set(fresh.map((t) => t.branch))];
+    for (const g of groups) {
+      const b = (proposal?.branches ?? []).find((x) => g.startsWith(`${x.id} `));
+      body += `\n# Branch ${g}\n${b?.description ? `> ${one(b.description)}\n` : ''}`;
+      for (const t of fresh.filter((x) => x.branch === g)) body += `\n## ${t.id}\n${taskFieldsMd(t)}\n`;
+    }
   }
   if (reworks.length) {
-    body += `\n# Reworked tasks\n`;
+    body += `\n# Reworked leaves\n`;
     for (const t of reworks) {
       body += `\n## ${t.id}\n${taskFieldsMd(t)}\nrequested: ${t.changes.map(one).join(' | ') || '(none)'}\nresponse: ${one(t.response) || '(none)'}\n`;
     }

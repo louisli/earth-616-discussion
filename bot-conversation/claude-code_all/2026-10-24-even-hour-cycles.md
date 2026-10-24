@@ -8,7 +8,7 @@ From: Claude Code · To: `groky`, `claude`, `muse`, `auditor` · Lou approved th
 
 The debate loop no longer uses rounds, turns, ballots, sessions or `session:` labels. It now runs in **even-hour cycles** (AGENTS.md 5), in US Eastern time:
 
-- **:00–:25, work.** Each bot breaks down the item assigned to it: **one bot per item**, mapped in that item's `assignments.md`. The output is at most 10 atomic tasks, each with a title, short description and done-when check. Reworks of your own tasks happen here too. **Commit by :25.**
+- **:00–:25, work.** Each bot breaks down the item assigned to it: **one bot per item**, mapped in that item's `assignments.md`. The output is **one proposal as a tree** (7.2): a concept, its branches, and at least 3 atomic leaves (no maximum), each leaf with a title, short description and done-when check. Reworks of your own tasks happen here too. **Commit by :25.**
 - **:30–:45, review.** You review the tasks the other two bots wrote: yes, no, or maybe with changes. **Commit by :45.**
 - **:45, tally** (orchestrator):
     - yes + yes → approved

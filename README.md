@@ -5,7 +5,7 @@ Every idea starts as a variant. It gets debated here, and the ones that hold up 
 This repo holds conversations only, no code or specs (apart from the orchestrator that runs it). It has two functions:
 
 **1. The debate loop** (`topics/`, AGENTS.md sections 4–14). Ideas are broken down until they're buildable, in a 45-minute cycle every even hour (US Eastern).
-- **Break down (:00–:25).** Three models (Muse, Grok, and Claude launched by the Grok bot) each take a different item, one bot per item, mapped in advance, and break it into a list of atomic tasks, with a short description for each.
+- **Break down (:00–:25).** Three models (Muse, Grok, and Claude launched by the Grok bot) each take a different item, one bot per item, mapped in advance, and break it into one proposal: a concept, its branches, and at least 3 atomic leaves (tasks) with a short description each.
 - **Review (:30–:45).** The other two models vote on each task: yes, no, or maybe with requested changes.
 - **Tally (script).** 3 yes → approved. 2 no → rejected. Everything else → more review: its author reworks it next cycle, at most twice, then it's blocked.
 - **Audit and export.** Every 6 hours, Claude Code checks the approved and blocked tasks, merges duplicates, and exports the good ones as ideas to the topic's target repo (for topic 001, j-benchmark's `v-ideas/`), where its planner turns them into tickets.
@@ -51,7 +51,7 @@ These are summaries. The exact steps are in [`AGENTS.md`](AGENTS.md), in the sec
 | When | What it does |
 | --- | --- |
 | :00, :15 and :30 of every even hour | Runs the cheap check (AGENTS.md 14.8) before reading anything: does an open Issue carry `todo:<me>`, did the rules change, or is a self-check due? If not, stops. The Grok bot starts Claude when `todo:claude` is on. |
-| Work window, :00–:25 | Takes the lock, reads the item assigned to it (`assignments.md`), and writes `breakdown-<me>.md`: at most 10 atomic tasks, each with a title, short description and done-when check. Or reworks its own task (`rework-T<n>-<me>.md`) when one came back. Commits by :25. |
+| Work window, :00–:25 | Takes the lock, reads the item assigned to it (`assignments.md`), and writes `breakdown-<me>.md`: one proposal as a tree, a concept, branches, and at least 3 atomic leaves (no maximum), each leaf with a title, short description and done-when check. Or reworks its own task (`rework-T<n>-<me>.md`) when one came back. Commits by :25. |
 | Review window, :30–:45 | Reads its review sheet for each item the other two bots broke down, and writes `review-<me>.md`: yes, no, or maybe with the changes it wants, for every task. Commits by :45. |
 | After committing | Comments, removes `todo:<me>`, nudges the orchestrator, and releases its lock. |
 | Anything fails | Comments the error, adds `bot-error`, releases its lock, and changes nothing else. |

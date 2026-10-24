@@ -50,32 +50,41 @@ test('Lou commands', () => {
   assert.ok(parseCommand('/pick X').error);
 });
 
-test('breakdown parsing', () => {
-  const text = `---\ntopic: "001"\nitem: "03"\nbot: muse\ncycle: 2026-10-24-02\n---\n## Summary\nSplit by track.\n\n## 1\ntitle: Pick the target model\ndescription: Choose one target model\n  for every run.\ndone_when: model named in README\nsources: [https://a.example, https://b.example]\n\n## 2\ntitle: no description\n`;
-  const b = F.parseBreakdown(text, { item: '03', bot: 'muse', cycle: '2026-10-24-02' });
+test('breakdown parsing: concept, branches, at least 3 leaves', () => {
+  const head = `---\ntopic: "001"\nitem: "03"\nbot: muse\ncycle: 2026-10-24-02\n---\n## Concept\nTwo tracks.\n\n## B1\ntitle: Models\ndescription: Which models.\n\n`;
+  const leaf = (n, b) => `## ${n}\nbranch: ${b}\ntitle: Leaf ${n}\ndescription: Do ${n}\n  carefully.\ndone_when: ${n} done\nsources: [https://a.example, https://b.example]\n\n`;
+  const b = F.parseBreakdown(head + leaf(1, 'B1') + leaf(2, 'B1') + leaf(3, 'B9') + leaf(4, 'B1') + '## 5\ntitle: no description\n', { item: '03', bot: 'muse', cycle: '2026-10-24-02' });
   assert.ok(b.ok);
-  assert.equal(b.tasks.length, 1);
-  assert.equal(b.tasks[0].description, 'Choose one target model for every run.');
+  assert.equal(b.concept, 'Two tracks.');
+  assert.equal(b.tasks.length, 4, 'no maximum; the leaf without a description is dropped');
+  assert.equal(b.tasks[0].branch, 'B1 Models');
+  assert.equal(b.tasks[2].branch, 'no branch');
+  assert.deepEqual(b.unbranched, ['Leaf 3']);
+  assert.equal(b.tasks[0].description, 'Do 1 carefully.');
   assert.deepEqual(b.tasks[0].sources, ['https://a.example', 'https://b.example']);
-  assert.equal(F.parseBreakdown(text, { bot: 'groky' }).ok, false);
-  assert.equal(F.parseBreakdown('no frontmatter').ok, false);
+  assert.equal(F.parseBreakdown(head + leaf(1, 'B1') + leaf(2, 'B1')).ok, false, 'fewer than 3 leaves');
+  assert.equal(F.parseBreakdown(head.replace('## Concept\nTwo tracks.\n', '') + leaf(1, 'B1') + leaf(2, 'B1') + leaf(3, 'B1')).ok, false, 'no concept');
+  assert.equal(F.parseBreakdown(head + leaf(1, 'B1'), { bot: 'groky' }).ok, false);
 });
 
 test('review parsing', () => {
-  const r = F.parseReview(`---\nitem: "03"\nbot: claude\ncycle: c\n---\n## T3\nvote: Yes\nreason: fine\n\n## t5\nvote: maybe\nreason: vague\nchanges: name the model\n\n## T6\nvote: perhaps\n`, { bot: 'claude' });
+  const r = F.parseReview(`---\nitem: "03"\nbot: claude\ncycle: c\n---\n## Proposal\ncomment: missing a cost branch\n\n## T3\nvote: Yes\nreason: fine\n\n## t5\nvote: maybe\nreason: vague\nchanges: name the model\n\n## T6\nvote: perhaps\n`, { bot: 'claude' });
   assert.deepEqual(Object.keys(r.votes), ['T3', 'T5']);
   assert.equal(r.votes.T3.vote, 'yes');
   assert.equal(r.votes.T5.changes, 'name the model');
+  assert.equal(r.proposal, 'missing a cost branch');
 });
 
 test('task.md and sheet round trip', () => {
   const t = { topic: '001', item: '03', task: 'T4', author: 'muse', state: 'more-review', reworks: 1, first_cycle: 'c', issue: 9, lou_approved: false, title: 'A', description: 'B c', done_when: 'D', sources: ['u'], changes: ['x'], history: ['h'] };
   const back = F.parseTask(F.renderTask(t));
   assert.deepEqual(back, t);
-  const sheet = F.renderSheet({ topic: '001', item: '03', cycle: 'c', reviewer: 'groky', fresh: [{ id: 'T1', author: 'muse', title: 'One', description: 'Two' }], reworks: [{ id: 'T4', author: 'muse', title: 'A', description: 'B', changes: ['x'], response: 'done' }] });
+  const sheet = F.renderSheet({ topic: '001', item: '03', cycle: 'c', reviewer: 'groky', proposal: { concept: 'C', branches: [{ id: 'B1', title: 'Models', description: 'description: tricky' }] }, fresh: [{ id: 'T1', author: 'muse', branch: 'B1 Models', title: 'One', description: 'Two' }], reworks: [{ id: 'T4', author: 'muse', title: 'A', description: 'B', changes: ['x'], response: 'done' }] });
   const parsed = F.parseSheet(sheet);
   assert.deepEqual(Object.keys(parsed), ['T1', 'T4']);
   assert.equal(parsed.T1.description, 'Two');
+  assert.equal(parsed.T1.branch, 'B1 Models');
+  assert.match(sheet, /# Branch B1 Models/);
   assert.equal(parsed.T4.title, 'A');
 });
 

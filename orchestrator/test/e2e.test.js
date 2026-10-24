@@ -125,7 +125,7 @@ async function botsWork(env, { skip = [] } = {}) {
           if (w.what === 'breakdown') {
             file = `${cdir}/breakdown-${bot}.md`;
             const marks = ['[ok]', '[fix]', '[no]', h.item === '03' ? '[stuck]' : '[ok]'];
-            text = `---\ntopic: "001"\nitem: "${h.item}"\nbot: ${bot}\ncycle: ${h.cycle}\n---\n## Summary\nBy ${bot}.\n\n${marks.map((m, k) => `## ${k + 1}\ntitle: ${h.item} task ${k + 1} ${m}\ndescription: Do part ${k + 1} of item ${h.item}.\ndone_when: part ${k + 1} exists\n`).join('\n')}`;
+            text = `---\ntopic: "001"\nitem: "${h.item}"\nbot: ${bot}\ncycle: ${h.cycle}\n---\n## Concept\nItem ${h.item} as two parts, by ${bot}.\n\n## B1\ntitle: Part one\ndescription: First half.\n\n## B2\ntitle: Part two\ndescription: Second half.\n\n${marks.map((m, k) => `## ${k + 1}\nbranch: B${k < 2 ? 1 : 2}\ntitle: ${h.item} task ${k + 1} ${m}\ndescription: Do part ${k + 1} of item ${h.item}.\ndone_when: part ${k + 1} exists\n`).join('\n')}`;
           } else {
             file = `${cdir}/rework-${w.task}-${bot}.md`;
             const t = F.parseTask(fs.readFileSync(path.join(env.botDir, `${td}/items/${h.item}/tasks/${w.task}/task.md`), 'utf8'));
@@ -243,6 +243,8 @@ test('topic 001 runs through even-hour cycles to done', async () => {
   assert.equal(fix.reworks, 1);
   assert.match(fix.title, /reworked 1/);
   assert.equal(fix.changes.length, 2);
+  assert.equal(fix.branch, 'B1 Part one');
+  assert.match(fs.readFileSync(path.join(env.botDir, `${td}/items/05/item.md`), 'utf8'), /## Concept\nItem 05 as two parts/);
   // overrides logged, MASTER updated
   sh(env.botDir, ['checkout', '-q', '-B', 'm', 'origin/main']);
   assert.match(fs.readFileSync(path.join(env.botDir, 'topics/done/001-2026-09-prompt-optimizer-arena/overrides.md'), 'utf8'), /\/reword/);
