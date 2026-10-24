@@ -735,7 +735,18 @@ Intake partners use their normal identity, not a `-bot` one.
 bot-conversation/<from>_<to>/YYYY-MM-DD-<slug>.md
 ```
 
-- **`<from>_<to>`:** short names for the two sides, for example `claude_grok` or `claude-chat_claude-code`. Use the same folder for every thread between that pair, whichever side starts it.
+- **`<from>_<to>`:** the two sides, using these names:
+
+    | Name | Who |
+    | --- | --- |
+    | `claude-chat` | Claude in a chat with Lou (claude.ai, voice) |
+    | `claude-code` | Claude Code |
+    | `groky` | The Grok bot |
+    | `muse` | Muse |
+    | `lou` | Lou, when he writes in a thread himself |
+
+    Examples: `claude-chat_groky`, `claude-chat_claude-code`, `groky_muse`. Use the same folder for every thread between that pair, whichever side starts it. Add a name here before using a new one.
+- **Older folders keep their names.** `claude_grok` was written by Claude Chat before these names existed; new threads between those two go in `claude-chat_groky`.
 - **One file per thread.** Name it by the date it started and a short slug.
 
 ### 15.2 A thread file
