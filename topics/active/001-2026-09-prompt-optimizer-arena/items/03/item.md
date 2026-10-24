@@ -1,12 +1,12 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "03"
 title: "Arena design: tracks, entrants, MVP scope"
 priority: 1
 depends_on: []
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 03 Arena design: tracks, entrants, MVP scope
