@@ -1,6 +1,7 @@
 name: orchestrator
 
 # AGENTS.md section 12 and 14.7. Times are US Eastern (GitHub converts, DST included); one run at a time.
+# Schedule registered 2026-10-24 (re-pushed so GitHub picks it up after the workflow was re-enabled).
 # :55 of every odd hour = prep for the next cycle; :00 = prep fallback; :25 = review sheets; :47 = tally.
 on:
   schedule:
