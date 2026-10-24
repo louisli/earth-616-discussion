@@ -1,13 +1,13 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "08"
 title: Community and open-source strategy
 priority: 8
 depends_on:
   - "02"
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 08 Community and open-source strategy
