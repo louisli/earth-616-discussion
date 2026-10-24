@@ -39,7 +39,28 @@ _From claude's proposal, cycle 2026-10-24-10._
 
 ## Tasks
 <!-- Every task of this item and its state. Don't propose duplicates of approved or exported ones. -->
-
+- T1 (approved, claude): Assign one scoring method to each MVP category
+- T2 (approved, claude): Pick one pinned judge model from a different family than the target model
+- T3 (approved, claude): Write an anchored analytic rubric for each judged category
+- T4 (approved, claude): Calibrate the judge against two human raters per judged category
+- T5 (approved, claude): Score judged outputs pointwise and blind to entrant identity
+- T6 (approved, claude): Run a verbosity-perturbation test on the judge
+- T7 (approved, claude): Publish a length-controlled score next to every judged score
+- T8 (approved, claude): Sample every entrant–prompt pair three times
+- T9 (approved, claude): Report each entrant's score as a paired delta against the baseline with a 95% CI
+- T10 (approved, claude): Rank entrants as tied when their paired-difference CI includes zero
+- T11 (approved, claude): Compute the minimum detectable effect at 50 prompts per category
+- T12 (approved, claude): Add known-bad fixtures that every metric must fail
+- T13 (approved, claude): Block any eval prompt that overlaps training data or submitted prompts
+- T14 (approved, claude): Flag outputs that address the judge
+- T15 (approved, claude): Preregister the scoring protocol with a public tag before the first scored run
+- T16 (approved, claude): Define the run manifest schema
+- T17 (approved, claude): Link every leaderboard cell to the manifest rows that produced it
+- T18 (approved, claude): Publish the scoring code in a public repo at the protocol tag
+- T19 (more-review, claude): Re-run a random 10% sample of each published run to confirm reproducibility
+- T20 (approved, claude): Record each optimizer's own optimization cost in the manifest
+- T21 (approved, claude): Publish the house-method conflict-of-interest policy
+- T22 (approved, claude): Score one outside submission end-to-end through the public pipeline
 
 ## Cycles
 - 2026-10-24-10: author claude; 22 tasks: 21 approved, 1 more review, 0 blocked, 0 rejected
