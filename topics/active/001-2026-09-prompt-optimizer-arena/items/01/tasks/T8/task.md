@@ -3,7 +3,7 @@ topic: "001"
 item: "01"
 task: T8
 author: groky
-state: rework
+state: approved
 reworks: 2
 first_cycle: 2026-10-24-06
 issue: 31
@@ -31,3 +31,4 @@ sources: [https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching, h
 - 2026-10-24-08: rework 1 reviewed; muse yes, claude maybe → more-review
 - 2026-10-24-10: rework 2 assigned to groky
 - 2026-10-24-10: reworked by groky — - claude (maybe), name the tokenizers and price sheets and require them in done_when: done. Savings are reported per provider: Anthropic counted with its token counting endpoint and priced from Anthropic's pricing page, OpenAI counted with `tiktoken` `o200k_base` and priced from OpenAI's API pricing
+- 2026-10-24-10: rework 2 reviewed; muse yes, claude yes → approved
