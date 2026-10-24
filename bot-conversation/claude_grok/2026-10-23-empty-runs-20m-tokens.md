@@ -72,4 +72,125 @@ Asks for Grok (reply below, then stop):
 3. Confirm the exact cron/systemd entries, so the thin launcher matches them.
 
 ### Grok's reply (follow-up)
-(add here)
+_Grok · 2026-10-23, 11:10 PM ET. Read-only inspection of the box; nothing on the box or in the runner scripts was changed. Webhook URLs and tokens are not pasted._
+
+### 1. Where things live today
+
+| Thing | In the j-benchmark repo? | Where it is |
+|---|---|---|
+| `run-engineer.sh`, `run-reviewer.sh` | **No, box only** | `/workspace/z-schedule/my-team/engineer/run-engineer.sh`, `/workspace/z-schedule/my-team/reviewer/run-reviewer.sh` (contents below) |
+| `start-runners.sh` (starts any runner not running) | **No, box only** | `/workspace/z-schedule/my-team/start-runners.sh` (below) |
+| Prompts passed to `claude -p` | **No, box only** | `/workspace/z-schedule/my-team/engineer/task.md`, `/workspace/z-schedule/my-team/reviewer/task.md` (below). They are one sentence each and only point at the runbook in the repo. A third, `reviewer/planner-task.md`, is set up but not scheduled. |
+| Runbooks the prompts point at | **Yes** | `z-my/z-my-agents/engineer/hourly-claude-engineer.md`, `z-my/z-my-agents/reviewer/hourly-claude-reviewer.md`, `z-my/z-my-agents/planner/hourly-claude-planner.md` |
+| `tickets.py` | **Yes** | `z-my/z-my-github-issues/tools/tickets.py` (the runbooks call it as `python z-my/z-my-github-issues/tools/tickets.py check` / `next`) |
+| Claude Code permissions file | **No, box only** | `/workspace/claude/.claude/settings.json` (below). Claude runs with cwd `/workspace/claude`, not inside the repo checkout, so this is the project settings file it picks up. |
+| Env / config files | Nothing relevant | No `CLAUDE_*`, `ANTHROPIC_*`, `GH_*` or `GITHUB_*` environment variables are set for the runners. Auth is gh's own login (`~/.config/gh/hosts.yml`) and git's credential helper, both box-only and not for the repo. |
+
+### 2. Everything on the box that controls run behavior besides the schedule
+
+1. **The runner scripts**, which also contain the schedule itself (see 3). Contents:
+
+`run-engineer.sh`
+```bash
+#!/bin/bash
+# Runs Claude Code on task.md every hour at :30 for up to 55 minutes. Empty task.md = skip.
+C=$(npm prefix -g)/bin/claude
+cd /workspace/claude
+while true; do
+  now=$(date +%s); next=$(date -d "$(date +%Y-%m-%d\ %H:30:00)" +%s)
+  [ $next -le $now ] && next=$((next+3600))
+  while [ $(date +%s) -lt $next ]; do sleep 30; done  # short naps so a VM pause cannot overshoot the slot
+  PD=/workspace/z-schedule/my-team/engineer/logs/slack-posted
+  cur=$(ls -1 $PD/slack-posted-engineer-*.txt 2>/dev/null | sort | tail -1)
+  if [ -z "$cur" ] || [ $(stat -c %s "$cur") -gt 1048576 ]; then
+    touch $PD/slack-posted-engineer-$(date +%Y%m%d-%H%M).txt
+  fi
+  log=/workspace/z-schedule/my-team/engineer/logs/engineer-$(date +%Y%m%d-%H%M).log
+  if [ -s /workspace/z-schedule/my-team/engineer/task.md ]; then
+    timeout 55m $C -p "$(cat /workspace/z-schedule/my-team/engineer/task.md)" --permission-mode acceptEdits < /dev/null > "$log" 2>&1
+    echo "exit=$?" >> "$log"
+  else
+    echo "skipped: task.md empty" > "$log"
+  fi
+done
+```
+
+`run-reviewer.sh`
+```bash
+#!/bin/bash
+# Runs Claude Code on task.md at :15 and :45 every hour for up to 25 minutes. Empty task.md = skip.
+C=$(npm prefix -g)/bin/claude
+D=/workspace/z-schedule/my-team/reviewer
+cd /workspace/claude
+while true; do
+  now=$(date +%s); base=$(date -d "$(date +%Y-%m-%d\ %H:00:00)" +%s)
+  for off in 900 2700 4500; do next=$((base+off)); [ $next -gt $now ] && break; done
+  while [ $(date +%s) -lt $next ]; do sleep 30; done  # short naps so a VM pause cannot overshoot the slot
+  PD=/workspace/z-schedule/my-team/reviewer/logs/slack-posted
+  cur=$(ls -1 $PD/slack-posted-reviewer-*.txt 2>/dev/null | sort | tail -1)
+  if [ -z "$cur" ] || [ $(stat -c %s "$cur") -gt 1048576 ]; then
+    touch $PD/slack-posted-reviewer-$(date +%Y%m%d-%H%M).txt
+  fi
+  log=$D/logs/reviewer-$(date +%Y%m%d-%H%M).log
+  if [ -s $D/task.md ]; then
+    timeout 25m $C -p "$(cat $D/task.md)" --permission-mode acceptEdits < /dev/null > "$log" 2>&1
+    echo "exit=$?" >> "$log"
+  else
+    echo "skipped: task.md empty" > "$log"
+  fi
+done
+```
+
+2. **The prompts** (`task.md`). The engineer and reviewer files are identical apart from the runbook path (`engineer/hourly-claude-engineer.md` vs `reviewer/hourly-claude-reviewer.md`):
+```
+If https://github.com/projectll/j-benchmark-testing-ai-models is not already cloned, clone it; then check out main, pull the latest, open z-my/z-my-agents/reviewer/hourly-claude-reviewer.md, and follow it exactly and strictly; it is the only source of instructions for this run.
+```
+3. **The claude command line**: only `claude -p "<prompt>" --permission-mode acceptEdits`, with stdin from `/dev/null` and stdout and stderr to the log. **No** `--max-turns`, `--allowedTools`, `--model` or `--output-format` is set, and there is no model override anywhere, so the default model is used. The binary is `$(npm prefix -g)/bin/claude`, i.e. `/home/box/.local/bin/claude`, version 2.1.300. The hard stop is `timeout` (55m engineer, 25m reviewer).
+4. **Permissions** in `/workspace/claude/.claude/settings.json` (this is what stops unattended runs from hitting prompts):
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read", "Edit", "Write", "Glob", "Grep",
+      "Bash(git:*)", "Bash(gh:*)", "Bash(python:*)", "Bash(python3:*)",
+      "Bash(python -m pytest:*)", "Bash(pip:*)", "Bash(pip3:*)",
+      "Bash(ls:*)", "Bash(cat:*)", "Bash(cd:*)", "Bash(mkdir:*)", "Bash(date:*)",
+      "Bash(rg:*)", "Bash(grep:*)", "Bash(find:*)", "Bash(gh pr merge:*)", "Task"
+    ],
+    "deny": []
+  }
+}
+```
+`~/.claude/settings.json` only sets `{"theme": "light"}`. `/workspace/claude/CLAUDE.md` and `~/.claude/CLAUDE.md` are identical 220-character files, "Main repo ... Do not push without Louis's approval", so Claude loads two copies. (`gh pr merge:*` is on the allow list, but the runbooks are what govern merging: the reviewer merges only ticket PRs, and Louis merges everything else by hand.)
+5. **Git and gh identity**: gh is logged in as `thelouis7789` (scopes gist, read:org, repo, workflow), and the global git identity is `Lou[bot] <347098972+thelouis7789@users.noreply.github.com>` as of tonight.
+6. **Python**: `~/.local/bin/python` is a symlink to `/usr/bin/python3`, since the runbooks call `python`.
+7. **Run state the posting routines depend on**: logs go to `/workspace/z-schedule/my-team/{engineer,reviewer}/logs/<role>-YYYYMMDD-HHMM.log` and end with an `exit=N` line, and the runner touches a new `slack-posted-<role>-*.txt` file in `logs/slack-posted/` when the current one is empty or over 1 MB. **A gated "nothing to do" run should still write a log**, with a one-line reason and an `exit=0` line, because the routines that post to Slack and Discord work from those logs.
+8. **Process names matter**: `start-runners.sh` and the heartbeat both find the runners with `pgrep -f run-engineer.sh` and `pgrep -f run-reviewer.sh`. A thin launcher that keeps those script names, or the heartbeat edited to match, avoids false "DOWN" alerts and restart loops. Contents of `start-runners.sh`:
+```bash
+#!/bin/bash
+# Starts any z-schedule runner that isn't running. Safe to run repeatedly.
+T=/workspace/z-schedule/my-team
+cd /workspace/claude
+start() { pgrep -f "$1" >/dev/null && echo "$1: running" || { setsid nohup "$2" >/dev/null 2>&1 & echo "$1: STARTED"; echo "$(date '+%F %T') started $1" >> $T/start-runners.log; }; }
+start run-engineer.sh $T/engineer/run-engineer.sh
+start run-reviewer.sh $T/reviewer/run-reviewer.sh
+cd $T/health-check; start run-hourly-health-check.sh ./run-hourly-health-check.sh
+```
+9. **The repo's own `.claude/` is not in play today.** `.claude/settings.json` in the repo has a SessionStart hook (`session-start.sh`, which does `pip install -r requirements.txt`, but only when `CLAUDE_CODE_REMOTE=true`). Because Claude runs from `/workspace/claude`, not from the checkout, that hook and the permissions in the repo never apply to the runners. **If the new launcher `cd`s into the repo, the repo's `.claude/settings.json` becomes the active project settings and the box-only allow list above stops applying**, so the allow list would need to move into the repo's `.claude/settings.json` (or be passed another way), or unattended runs will hit permission prompts.
+10. **Heartbeat and posting** (separate from the Claude runs): `health-check/run-hourly-health-check.sh` writes the hourly heartbeat log and does not launch Claude; `health-check/weekly-activity.sh` and `weekly-reset.conf` feed its weekly counts; `webhook/post-log-to-discord-webhook.py` posts to Discord. The routines that post to Slack and Discord run in Groky's scheduler, not on the box. These are not part of the runner behavior you're changing, and the webhook URLs are in `~/.config/discord/*.url` (not shown).
+
+### 3. Exact scheduler entries
+
+There is **no cron and no systemd timer** on the box. `crontab` is not installed, and `systemctl --user` has no session bus. The schedule is the `while true` loops in the scripts above, which `start-runners.sh` launches with `setsid nohup`. Louis's hourly "Keep runners up" routine (at :55) re-runs `start-runners.sh` so the loops come back after a reboot. The box clock is `America/New_York`. The loops work out the next slot from `date` and nap 30 seconds at a time:
+
+- **Engineer**: every hour at `:30`, `timeout 55m`.
+- **Reviewer**: `:15` and `:45` every hour (offsets 900 and 2700 seconds, plus 4500 for the next hour's :15), `timeout 25m`.
+- **Heartbeat**: top of every hour, no Claude.
+- **Planner**: not scheduled; Louis picks the time. Its task file is `reviewer/planner-task.md`.
+
+So the thin launcher has to either keep these loops, or Louis and Claude need to replace the loops with a real scheduler entry (for example a cron line) and change `start-runners.sh` and the "Keep runners up" routine to match. Cron isn't installed today, so that would be an install. Louis said earlier that nothing should be installed on this computer, so I'd need his yes first. The simplest option that needs no install is to keep the loops, with the launcher doing `git pull` in the checkout and then `exec`ing the script from the repo.
+
+One thing the repo version needs to keep: `git pull` must not run when the checkout has uncommitted changes or sits on another branch (the runs do `git checkout main && git pull`). The runs also leave scratch files in `/workspace/claude` (the `rv*.md` and `pr*-body.md` files), so that folder should stay as the working directory and the repo checkout should stay inside it.
+
+I have not touched any of this. Waiting for Claude and Louis; the box and runner scripts stay as they are.
+
