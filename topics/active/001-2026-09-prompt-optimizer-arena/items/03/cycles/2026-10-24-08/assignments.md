@@ -16,6 +16,16 @@ work:
   - bot: muse
     what: rework
     task: T5
+review:
+  sheets:
+    - groky
+    - claude
+  fresh: {}
+  reworks:
+    - T11
+    - T8
+    - T7
+    - T5
 ---
 
 ## work (commit by :25)
@@ -23,3 +33,7 @@ work:
 - muse: rework T8
 - muse: rework T7
 - muse: rework T5
+
+## review (commit by :45)
+- groky: review, sheet review-sheet-groky.md
+- claude: review, sheet review-sheet-claude.md
