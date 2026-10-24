@@ -10,7 +10,7 @@ claude_schedule_prompt: Your role is `claude`. Confirm you can access `louisli/e
 claude_schedule: gate loop on the box (run-earth-claude.sh, no model) at :00, :15 and :30 of every even hour ET; it starts Claude only when todo:claude is on an open Issue (14.8 step 1), AGENTS.md changed since claude's last_config_sha, or Claude's self-check is over 12 hours old; skips while a claimed:claude lock is live
 claude_next_run: 2026-10-24T08:00:00Z
 token_expires: unknown
-last_config_sha: 776fa431a9397ef9344710133ea10b13aaf2a2c8
+last_config_sha: 2e8c47d7f3fcd6799bdcd9dc4fa7335b7a5f2acb
 first_check_in: 2026-10-24
 last_self_check: 2026-10-24T04:39:40Z
 status: ok
