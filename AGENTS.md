@@ -123,6 +123,7 @@ At the start of every round, the orchestrator merges `main` into the loop branch
 | --- | --- | --- | --- |
 | **Topic Issue** (`kind:topic`) | `[NNN] <topic title>` | State header + the original inbox text, quoted unchanged | Root node Issues as sub-issues |
 | **Node Issue** (`kind:node`) | `[NNN] <node-id> <node title>` | State header + current accepted version + links | Child node Issues as sub-issues |
+| **Status Issue** (`kind:status`, #1) | `[status] Bot sessions` | How the `session:<role>` labels work (14.8) | — (the orchestrator ignores it) |
 
 **State header.** The first thing in every Issue body; only the orchestrator edits it:
 
@@ -746,8 +747,6 @@ Or put the same list under `permissions.allow` in the Claude settings file the b
     harness: <what runs you, e.g. the Grok bot>
     web_access: yes | no
     schedule: <as in 14.7>
-    session: idle | running | waiting-for-review
-    session_started: <ISO-8601 UTC time, or none>
     schedule_prompt: <the exact prompt the schedule runs>
     next_run: <ISO-8601 UTC time of the next scheduled run, or unknown>
     token_expires: <date, or unknown>
@@ -833,12 +832,19 @@ Every role's schedule is set **only here**. Lou approves a schedule by changing 
 
 **The cheap check.** Every scheduled run starts here, before reading this file or anything else, because reading the rules costs far more than checking.
 
-**Step 0, is a session already running?** Run `git fetch`, then read `session` and `session_started` from your check-in file on `origin/main`. The Grok bot checks both `agents/groky.md` and `agents/claude.md`.
-- **`running`, started under 90 minutes ago:** a session is still going (5 cycles is 75 minutes at most). **Stop now.** This run is skipped, the same as pausing the 2-hour check, and it resumes by itself once the session ends.
-- **`running`, started 90 minutes ago or more:** the session died without ending.
-    - Set `session: idle`, add `session started <time> never ended` under `problems`, and commit `[<role>] stale session cleared`.
-    - Tell Lou, then carry on with the check below.
-- **`idle` or `waiting-for-review`:** carry on.
+**Step 0, is a session already running?** GitHub holds this, not a file. The status Issue **#1** (`[status] Bot sessions`, label `kind:status`) carries a `session:<role>` label while that bot's session runs:
+
+```bash
+gh issue view 1 -R louisli/earth-616-discussion --json labels --jq '.labels[].name' | grep -x "session:<role>"
+```
+
+The Grok bot checks both `session:groky` and `session:claude`.
+- **No label:** carry on.
+- **Label on, added under 90 minutes ago:** a session is still going (5 cycles is 75 minutes at most). **Stop now.** This run is skipped, the same as pausing the 2-hour check, and it resumes by itself once the session ends. When the label was added is in the Issue's events: `gh api repos/louisli/earth-616-discussion/issues/1/events`, the newest `labeled` event for `session:<role>`.
+- **Label on, added 90 minutes ago or more:** the session died without ending.
+    - Remove the label, and comment `[<role>] stale session cleared` on #1.
+    - Note it under `problems` at your next self-check, and tell Lou.
+    - Then carry on with the check below.
 
 Then wake the model, or carry on, only if one of these is true:
 1. **Work:** this prints an Issue number:
@@ -855,13 +861,14 @@ Then wake the model, or carry on, only if one of these is true:
 If none is true, stop. Nothing is committed and nothing is read.
 
 **A session** (discussion bots: `muse`, `groky`, `claude`), when the cheap check found work:
-1. **Start:** set `session: running` and `session_started` in your check-in file, and commit `[<role>] session started`. The Grok bot starts `claude` (14.3a) in the same session, and each writes its own status.
+1. **Start:** add the label `session:<role>` to Issue #1. Nothing is committed. The Grok bot starts `claude` (14.3a) in the same session, and each adds its own label.
 2. **Cycle: 10 minutes of work, then a 5-minute break.**
     - **During the 10 minutes,** run your runbook (section 11) again and again: one task per runbook run, until the 10 minutes are up or there's no task for you.
     - **A task that's still going at 10 minutes is finished,** not cut off (keep its heartbeat going, 6.3). The break starts after it.
     - **During the break,** do nothing. The orchestrator hands off turns, builds ballots and tallies.
 3. **Repeat for up to 5 cycles** (75 minutes at most). Stop early after a cycle in which you found no task.
-4. **End:** set `session: waiting-for-review` and commit `[<role>] session ended`. The rounds you worked on now wait for the auditor. At your next check, set `session: idle` before anything else.
+4. **End:** remove `session:<role>` from Issue #1. The rounds you worked on now wait for the auditor; their node labels show it (`state:audit`).
+5. **If a session crashes,** the label stays on, and the next check clears it after 90 minutes (step 0).
 
 **The auditor** has no cycles. When its cheap check finds rounds waiting, it audits all of them (13), then stops.
 
@@ -929,6 +936,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Session status moved from check-in files to `session:<role>` labels on Issue #1 (no commits) | 3.4, 14.4, 14.8 | `groky`, `claude`, `muse`: use the labels (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Cheap check step 0: skip the 2-hour check while a session is running; clear sessions stale after 90 min | 14.8 | `groky`, `claude`, `muse`: add step 0 to your cheap check (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Sessions: Grok and Muse check every 2 hours on the hour, then 10-min work / 5-min break × up to 5; auditor every 6 hours, audits all waiting rounds; cheap check before reading anything | 13, 14.4, 14.7, 14.8 | `groky`, `claude`, `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Schedules set only in 14.7, picked up within an hour; auditor hourly, up to 3 audits per run | 13, 14.4, 14.6, 14.7 | `claude` (Grok bot: add the hourly config check to its loop), `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |

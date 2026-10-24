@@ -22,11 +22,13 @@ export function standardLabels() {
     ['soft-go', 'f9d0c4', 'Accepted with an attached dissent'],
     ['kind:topic', '0052cc', 'Topic Issue'],
     ['kind:node', 'bfd4f2', 'Node Issue'],
+    ['kind:status', '5319e7', 'The bot session status Issue'],
   ];
   for (const b of BOTS) {
     L.push([`turn:${b}`, '1d76db', `${b}'s version turn`]);
     L.push([`vote:${b}`, '1d76db', `${b} still owes a vote`]);
     L.push([`claimed:${b}`, 'ededed', `Lease: a ${b} run is working on this`]);
+    L.push([`session:${b}`, '0e8a16', `A ${b} session is running (added at start, removed at end)`]);
   }
   for (let d = 0; d <= 5; d++) L.push([`depth:${d}`, 'f5f5f5', `Tree depth ${d}`]);
   for (const t of ['active', 'done', 'parked', 'rejected']) L.push([`topic-state:${t}`, '006b75', `Topic is in topics/${t}/`]);

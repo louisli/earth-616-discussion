@@ -36,5 +36,7 @@ label "soft-go" "f9d0c4" "Accepted with an attached dissent"
 for d in 0 1 2 3 4 5; do label "depth:$d" "f5f5f5" "Tree depth $d"; done
 label "kind:topic" "0052cc" "Topic Issue"
 label "kind:node"  "bfd4f2" "Node Issue"
+label "kind:status" "5319e7" "The bot session status Issue"
+for b in muse groky claude; do label "session:$b" "0e8a16" "A $b session is running (added at start, removed at end)"; done
 for t in active done parked rejected; do label "topic-state:$t" "006b75" "Topic is in topics/$t/"; done
 label "topic:001" "006b75" "Topic 001 — prompt optimizer arena"
