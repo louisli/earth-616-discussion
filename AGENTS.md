@@ -624,9 +624,9 @@ Each run does these passes in order.
 
 ## 13. Runbook: auditor (Claude Code)
 
-Handle one round per run. The singleton and lock rules (6.3) apply, with role `auditor`.
+Handle up to **3** rounds per run, oldest first, one at a time: lock, audit, hand off and release each before the next. This matters because the auditor runs hourly (14.7). The singleton and lock rules (6.3) apply, with role `auditor`.
 
-1. **Check in** (section 14). Run the singleton check, find the oldest Issue with `state:audit` and no `bot-error`, and lock it. Nothing found → exit.
+1. **Check in** (section 14). Run the singleton check, find the oldest Issue with `state:audit` and no `bot-error`, and lock it. Nothing found → exit. After step 5, repeat from here until 3 rounds are done or none are left.
 2. **Load.**
     - Parse the header and check out the branch (`git reset --hard origin/<branch>`).
     - Collect the files in `rounds/rNN/`, the commits touching that path, and the Issue's label timeline for this round.
@@ -751,6 +751,7 @@ Or put the same list under `permissions.allow` in the Claude settings file the b
     token_expires: <date, or unknown>
     first_check_in: 2026-10-22
     last_self_check: <ISO-8601 UTC time>
+    last_config_sha: <commit of AGENTS.md you last applied>
     status: ok | problem
     problems: []
     ---
@@ -758,7 +759,7 @@ Or put the same list under `permissions.allow` in the Claude settings file the b
     ```
 
 4. **Report to Lou:** you're set up, here's your dry-run result, and whether your harness can schedule itself.
-5. **Schedule.** If your harness can schedule recurring runs, propose this prompt to Lou, and set it up **only once he approves**:
+5. **Schedule.** Set up the schedule your role's row in **14.7** gives, exactly: interval, where it runs, gate. If the row says `pending`, don't set anything up; propose one in your check-in reply and wait for Lou to update 14.7. The prompt is:
 
     > Your role is `<role>`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once.
 
@@ -792,7 +793,7 @@ Do this on the first run after `last_self_check` turns 12 hours old. It catches 
 1. **Identity:** 14.1 still passes. `gh api user --jq .login` is the login in your check-in file, with `WRITE` access or higher.
 2. **Workspace:** the clone, `gh auth setup-git` and the git identity `<role>-bot` (14.3) all work.
 3. **Schedule:**
-    - The recurring run still exists, and runs every 5 minutes.
+    - The recurring run still exists, and matches your row in 14.7 (interval, where it runs, gate).
     - Its prompt still matches `schedule_prompt`, including your role.
     - Record when the next run is due (`next_run`).
     - If your harness can't see its own schedule, write `unknown` and say so under problems. The exception is the `claude` role: the Grok bot checks its schedule (14.3a).
@@ -807,6 +808,23 @@ Do this on the first run after `last_self_check` turns 12 hours old. It catches 
     - **Don't try to repair the schedule or token yourself.** Lou fixes those.
 
 Then continue with 14.5.
+
+### 14.7 Schedules (the one place they're set)
+
+Every role's schedule is set **only here**. Lou approves a schedule by changing its row, and nobody turns on, changes or stops a schedule that disagrees with its row.
+
+| Role | Runs on | Interval | Gate | Status |
+| --- | --- | --- | --- | --- |
+| `claude` | Grok bot's box, a loop run by the Grok bot (14.3a) | every 5 min | shell gate before the model: idle ticks cost nothing | approved, running |
+| `muse` | Muse's own cron | every 5 min | gate as the first step inside the run (the model still wakes each time) | approved, running |
+| `groky` | Grok bot | not set | — | pending: Lou to choose (see thread `claude-code_groky/2026-10-24-check-in.md`) |
+| `auditor` | Claude's cloud scheduler | every 1 hour (the scheduler's usual minimum) | gate as the first step inside the run; up to 3 audits per run (13) | pending: Lou to confirm |
+| orchestrator | GitHub Action | every 5 min | — | pending: off until Lou says go |
+
+**Picking up changes within an hour:**
+- **Roles whose model wakes every run** (`muse`, `auditor`, a routine) already read this file every run (14.5).
+- **Gated loops** (`claude`) must still check for changes at least hourly. Every hour the loop runs `git fetch` and compares `git log -1 --format=%H origin/main -- AGENTS.md` with `last_config_sha` in the role's check-in file. If they differ, it wakes the model even with no work, so the role re-reads its sections and this table.
+- **When your row changes:** apply it (adjust your schedule, or ask whoever runs it to), then update your check-in file (`schedule`, `next_run`, `last_config_sha`). Commit with `[<role>] schedule updated per 14.7`. If you can't apply it yourself, say so under `problems` and tell Lou.
 
 ## 15. Bot conversations
 
@@ -872,6 +890,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Schedules set only in 14.7, picked up within an hour; auditor hourly, up to 3 audits per run | 13, 14.4, 14.6, 14.7 | `claude` (Grok bot: add the hourly config check to its loop), `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Shared bot account named (`thelouis7789`) | header | Grok bot: see thread `claude-code_groky/2026-10-24-check-in.md` |
 | 2026-10-24 | The Grok bot owns and self-checks both its schedules; an unapproved schedule isn't a problem | 14.3a, 14.6 | Grok bot and `claude`: update your check-in files at the next self-check |
 | 2026-10-24 | One `<from>_all` thread when several bots get the same message | 15.1 | — |
