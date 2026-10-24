@@ -782,9 +782,9 @@ Do this on the first run after `last_self_check` turns 12 hours old. It catches 
     - If your harness can't see its own schedule, write `unknown` and say so under problems.
 4. **Rules:** if `AGENTS.md` changed since `last_self_check`, read your role's sections again.
 5. **Token:** note `token_expires` if your harness can see it. Flag it as a problem when it's under 14 days away.
-5a. **Web access:** run one real web search. If it fails, set `web_access: no` and list it under problems. For the `claude` role, that usually means the allowed tools are missing (14.3a).
-6. **Record:** update `agents/<role>.md` with `last_self_check`, `next_run`, `status` and `problems`. Commit with `[<role>] self-check: ok` or `[<role>] self-check: problem`.
-7. **If anything failed:**
+6. **Web access:** run one real web search. If it fails, set `web_access: no` and list it under problems. For the `claude` role, that usually means the allowed tools are missing (14.3a).
+7. **Record:** update `agents/<role>.md` with `last_self_check`, `next_run`, `status` and `problems`. Commit with `[<role>] self-check: ok` or `[<role>] self-check: problem`.
+8. **If anything failed:**
     - Set `status: problem` and list each failure under `problems`, one short line each.
     - Tell Lou in your harness's usual channel.
     - **Don't try to repair the schedule or token yourself.** Lou fixes those.
