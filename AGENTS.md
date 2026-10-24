@@ -74,7 +74,7 @@
 
 ```
 AGENTS.md            this rulebook
-CLAUDE.md            one-line pointer to README.md, for Claude Code
+CLAUDE.md            router for Claude Code, in the standard shape (section 17)
 README.md            human overview
 MASTER.md            master list: every topic, item and task count (orchestrator)
 TEMPLATE.md          template for a seed
@@ -567,7 +567,8 @@ Read your sheet, `review-sheet-<me>.md`, plus the topic README, `overrides.md` a
 ```bash
 git add <only the files you wrote>
 git commit -m "[<me>] <cycle> breakdown"     # or: rework T4 / review
-git pull --rebase origin work/NNN && git push origin HEAD:work/NNN
+git pull --rebase origin work/NNN
+git push origin HEAD:work/NNN
 ```
 
 - **If the push fails,** retry the pull and push, 3 times at most.
@@ -663,11 +664,15 @@ gh api user --jq .login
 ### 14.3 Workspace (every run; you have no memory of earlier runs)
 
 ```bash
-gh repo clone louisli/earth-616-discussion earth-616 2>/dev/null || true
-cd earth-616 && gh auth setup-git && git fetch origin
-git config user.name "<role>-bot"
-git config user.email "<role>-bot@users.noreply.github.com"
+gh repo clone louisli/earth-616-discussion earth-616   # skip if earth-616 already exists
+gh auth setup-git
+git -C earth-616 fetch origin
+git -C earth-616 config user.name "<role>-bot"
+git -C earth-616 config user.email "<role>-bot@users.noreply.github.com"
 ```
+
+- **One command per call.** Run each `git` and `gh` command on its own: no `&&` or `;`, and don't start with `cd`. Unattended Claude runs refuse chained commands, because their pre-approved tools match single commands only.
+- **The examples in this file run inside your clone.** If your harness can't change folder, use `git -C <clone> ...` and `gh ... -R louisli/earth-616-discussion`.
 
 Intake partners use their normal identity, not a `-bot` one.
 
@@ -898,6 +903,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Standard router shape for every `CLAUDE.md` (section 17); this repo's `CLAUDE.md` rewritten to it. One `git`/`gh` command per call, with no `&&`, `;` or leading `cd`; the 11.6 and 14.3 examples split into single steps | 3.1, 11.6, 14.3, 17 | `claude`: run git and gh as single commands (Grok bot: the box router in j-benchmark PR #143 points the `claude` role at `/workspace/earth/claude-role/earth-616-claude`) |
 | 2026-10-24 | Orchestrator cron moved to plain UTC: the `timezone:` key never fired. The hours must be swapped at each DST change (first Sunday of November, second Sunday of March) | 14.7 | — |
 | 2026-10-24 | Lou said go: orchestrator workflow on, `start_cycles` true; first prep at 05:55 ET for the 06:00 cycle | 14.7 | — |
 | 2026-10-24 | Orchestrator runs only at :55 (prep), :00 (prep fallback), :25 (sheets) and :47 (tally) instead of every 5 minutes; tally moved from :45 to :47; bots no longer nudge it | 5.1, 7.5, 11.6, 12, 14.7 | `groky`, `claude`, `muse`: drop the nudge step (same thread) |
@@ -919,3 +925,52 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 | 2026-10-24 | 12-hour self-check; richer check-in file; optional run gate | 14.4–14.6 | All bots and the auditor, at first check-in (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Bot conversations made official; `thread` role; names | 0.2, 2, 14.2, 15 | — |
 | 2026-10-23 | Tag rule for bot comments | 0.9, 6.3, 9.1, 11, 13, 14.1 | — |
+
+## 17. Entry files in every repo
+
+Every repo Lou's bots work in, and every Claude start folder on a bot's box, has a `CLAUDE.md` with the same shape, so Claude behaves the same way everywhere. Only the identity line, the rules file and the routes change from repo to repo. Each `CLAUDE.md` is a **router**: it says which file to read, and holds no rules of its own beyond the general rules.
+
+### 17.1 The shape
+
+```markdown
+# CLAUDE.md: <owner/repo, or the box and folder>
+
+<One line: what this repo is, and what it is not (name the sibling repo).>
+
+## General rules (same in every repo)
+<the block in 17.2, word for word>
+
+## Rules file
+Read `<rules file>` (next to this file) first.
+
+## Routes: read only the file that matches your task
+| If your task is… | Read |
+| --- | --- |
+| <one condition> | `<one file, or one section of the rules file>` |
+| anything else | ask Lou |
+```
+
+- **Order is fixed:** identity, general rules, rules file, routes.
+- **Mention files, never import them** (no `@file` lines), so a run loads only what its task needs.
+- **One condition and one file per route.** A router may route to another repo's or folder's `CLAUDE.md` (a box router does).
+- **Rules files:** this repo's is `AGENTS.md`, the one rulebook (Grok and Muse read it too). projectll/j-benchmark-testing-ai-models uses `CLAUDE_j-benchmark.md`. A box router has none and routes to each repo's `CLAUDE.md`.
+
+### 17.2 General rules, word for word
+
+```markdown
+1. Read the rules file below before you start work; a route may send you to
+   just one part of it. If it and this file disagree, stop and ask Lou (in an
+   unattended run: report it and stop).
+2. Name the repo, branch and file path in everything you report.
+3. No secrets in files, commits, PRs or posts. Say where a secret is kept.
+4. Lasting instructions live in the repo. When Lou gives a lasting rule in a
+   chat, write it into the rules file.
+5. If no route below matches your task, ask Lou (in an unattended run: report
+   it and stop). Don't guess.
+6. Run git and gh as one command per call. No && or ;, and don't start with
+   cd. Use git -C <dir> ... instead.
+```
+
+### 17.3 Changing the shape or the general rules
+
+Change them here first (section 16), then copy the new block into every `CLAUDE.md` in the same session: this repo's, and j-benchmark's `CLAUDE.md` and `z-my/z-my-agents/config/grok-config-box-claude.md` (through a PR Lou merges). j-benchmark's tests check that its two copies match each other.
