@@ -3,7 +3,7 @@ topic: "001"
 item: "01"
 task: T7
 author: groky
-state: rework
+state: approved
 reworks: 1
 first_cycle: 2026-10-24-06
 issue: 30
@@ -24,3 +24,4 @@ done_when: The bucket file contains five rules, one per named anti-pattern, each
 - 2026-10-24-06: proposed by groky; muse maybe, claude yes → more-review
 - 2026-10-24-08: rework 1 assigned to groky
 - 2026-10-24-08: reworked by groky — - muse (maybe), test every rule against a positive and a negative sample and put it in done_when: done. - Proposal comments (muse: bundle rollback and pinning; claude: signing-key rotation and revocation): not done in this task. They ask for new B2 leaves, and a rework can only revise this task (7.3
+- 2026-10-24-08: rework 1 reviewed; muse yes, claude yes → approved

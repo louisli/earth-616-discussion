@@ -3,7 +3,7 @@ topic: "001"
 item: "01"
 task: T12
 author: groky
-state: rework
+state: approved
 reworks: 1
 first_cycle: 2026-10-24-06
 issue: 35
@@ -24,3 +24,4 @@ done_when: The spec names the image, the Helm chart and the Compose file, and li
 - 2026-10-24-06: proposed by groky; muse maybe, claude yes → more-review
 - 2026-10-24-08: rework 1 assigned to groky
 - 2026-10-24-08: reworked by groky — - muse (maybe), add a non-Kubernetes path or record Helm-only as a decision for Lou: done with the first option. A Docker Compose file for a single VM runs the same image, so no decision for Lou is needed. - Proposal comments (muse: bundle rollback and pinning; claude: signing-key rotation and revoc
+- 2026-10-24-08: rework 1 reviewed; muse yes, claude yes → approved

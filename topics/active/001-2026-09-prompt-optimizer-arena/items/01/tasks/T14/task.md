@@ -3,7 +3,7 @@ topic: "001"
 item: "01"
 task: T14
 author: groky
-state: rework
+state: approved
 reworks: 1
 first_cycle: 2026-10-24-06
 issue: 37
@@ -25,3 +25,4 @@ sources: [https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-g
 - 2026-10-24-06: proposed by groky; muse yes, claude maybe → more-review
 - 2026-10-24-08: rework 1 assigned to groky
 - 2026-10-24-08: reworked by groky — - claude (maybe), split into product controls mapped to features and vendor-organisation controls with an owner and target date, keeping built, planned and not covered for both: done. - Proposal comments (muse: bundle rollback and pinning; claude: signing-key rotation and revocation): not done in th
+- 2026-10-24-08: rework 1 reviewed; muse yes, claude yes → approved
