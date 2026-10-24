@@ -63,4 +63,47 @@ If 1 to 3 fail, stop and report; don't install.
 Copy the `.bak-20261023` files back, pkill the loops, run `start-runners.sh`.
 
 ## Grok's reply
-(add here)
+_Grok · 2026-10-23, 11:47 PM ET. Louis asked me to do this in chat, and the file says he approved the box changes. Both repos were pulled first: `projectll/j-benchmark-testing-ai-models` `main` includes **f88a23f** (it is the HEAD commit, "[claude]: remove runners/box/run-reviewer.sh (moved to config/) [skip ci]"), and earth was fast-forwarded to pick up this file._
+
+### 2. Checks before installing
+
+1. **Checkout path:** the runs use `/workspace/claude/j-benchmark-testing-ai-models`, the same path the launchers assume. No change needed.
+2. **`tickets.py next`:** exists, exit code 0, and printed nothing (no `todo` tickets; all 39 tickets are `complete` (34), `started-incomplete` (2, i.e. 019a and 022a) or `superseded` (2)).
+3. **`--settings`:** `claude --version` is 2.1.300 and `claude --help` lists `--settings <file-or-json>`.
+4. **`python -m pytest -q`:** `270 passed, 1 skipped in 8.56s`
+5. **Dry gate runs from the checkout:**
+   - `grok-config-gate.py reviewer` printed `no open PRs`, `rc=10`
+   - `grok-config-gate.py engineer` printed `no open PRs and no todo ticket`, `rc=10`
+
+All five passed, so I went ahead. I also read the launchers, `grok-config-run-once.sh`, the two role scripts and the gate before installing. One note: the gate treats "no open PRs and no `todo` ticket" as nothing to do for the engineer, so a ticket in a feedback status with no open PR would not launch a run. I assume that is intended; the runbook handles feedback only through open PRs.
+
+### 3. Install
+
+- No `claude -p` run was in progress (checked just before, at 11:26 PM; the next slot was 11:30).
+- Backed up as `run-engineer.sh.bak-20261023` and `run-reviewer.sh.bak-20261023` next to the originals (the earlier `.bak-*` files are untouched).
+- Copied `config/grok-config-box-run-engineer.sh` over `/workspace/z-schedule/my-team/engineer/run-engineer.sh` and `config/grok-config-box-run-reviewer.sh` over `/workspace/z-schedule/my-team/reviewer/run-reviewer.sh`, then `chmod +x`.
+- Stopped only the old loops by their exact PIDs (16418 and 16422), then ran `start-runners.sh`. It printed `run-engineer.sh: STARTED`, `run-reviewer.sh: STARTED`, and `run-hourly-health-check.sh: running` (11:26 PM). The new loops are PIDs 63842 and 63849, and both are still up.
+- Left `task.md`, the heartbeat, the posting routines and the `start-runners.sh` script alone.
+
+### 4. Test
+
+First and last lines of the new logs (the logs are two lines, so first and last together are the whole log):
+
+`engineer/logs/engineer-20261023-2330.log` (the 11:30 PM slot, the first slot after the install):
+```
+skipped: nothing to do (no open PRs and no todo ticket)
+exit=0
+```
+
+`reviewer/logs/reviewer-20261023-2345.log` (the 11:45 PM slot):
+```
+skipped: nothing to do (no open PRs)
+exit=0
+```
+
+- **Permission prompts:** no run launched Claude, so no prompt could hang. The path where the gate says there is work, with Claude launched using `--settings`, has not been exercised yet; it will only happen when there is an open PR (or, for the engineer, a `todo` ticket). I can watch for that first real run and report if you want.
+- **Heartbeat:** the process list shows both runners up under the unchanged names (`run-engineer.sh` and `run-reviewer.sh`), and `start-runners.sh` reports them as running. The 11:00 PM heartbeat log (written before the install) showed both runners up, and the midnight one will be the first after the install; I'll flag it only if it shows DOWN.
+- **Posting routines:** the engineer's "skipped" log for 11:30 PM will be posted at the next :25 run like any other log, and the posted lists were not touched.
+
+Rollback has not been needed.
+
