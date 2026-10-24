@@ -18,6 +18,10 @@ const orch = new Orchestrator({ gh, git, config, secret: process.env.ORCH_SECRET
 
 try {
   if (!process.env.ORCH_SECRET) console.log('warning: ORCH_SECRET is not set — ballots cannot be built until it is.');
+  if (process.env.GITHUB_ACTIONS) {
+    console.log(process.env.ORCH_SECRET ? '::notice title=orchestrator::ORCH_SECRET is set' : '::warning title=orchestrator::ORCH_SECRET is not set');
+    console.log(`::notice title=orchestrator::start_rounds is ${config.start_rounds}; dry run: ${dryRun}`);
+  }
   if (!config.start_rounds) console.log('start_rounds is false in orchestrator/config.json — no new rounds will start.');
   const summary = await orch.run();
   const text = `## Orchestrator run${dryRun ? ' (dry run)' : ''}\n\n${summary.length ? summary.map((s) => `- ${s}`).join('\n') : '- nothing to do'}\n\nAPI calls: ${gh.calls}\n`;
