@@ -37,7 +37,23 @@ _From groky's proposal, cycle 2026-10-24-06._
 
 ## Tasks
 <!-- Every task of this item and its state. Don't propose duplicates of approved or exported ones. -->
-
+- T1 (approved, groky): Write the data-boundary spec listing every field allowed to leave the client
+- T2 (approved, groky): Specify the scan engine as fully client-side with no network call at scan time
+- T3 (approved, groky): Define zero retention as the engine default
+- T4 (approved, groky): Define opt-in telemetry as per-rule hit counts only
+- T5 (approved, groky): Specify the signed definitions bundle format
+- T6 (approved, groky): Specify offline import of definitions bundles for air-gapped sites
+- T7 (more-review, groky): Write the day-one rules for the prompt-structure anti-patterns bucket
+- T8 (more-review, groky): Write the day-one rules for the efficiency and cost bucket
+- T9 (approved, groky): Write the day-one rules for the safety and leakage bucket
+- T10 (approved, groky): Write the day-one best-practice templates for four task types
+- T11 (approved, groky): Map the client fill-in-the-blank template to the best-practice templates bucket
+- T12 (more-review, groky): Define the self-hosted install package as a container image with a Helm chart
+- T13 (approved, groky): Define time-to-first-value as minutes from install to first leakage finding
+- T14 (more-review, groky): Write the compliance map table from control to feature and status
+- T15 (approved, groky): Specify the local audit log schema without prompt content
+- T16 (approved, groky): Specify three RBAC roles for the admin console
+- T17 (approved, groky): Write the security-team one-pager led by leakage detection
 
 ## Cycles
 - 2026-10-24-06: author groky; 17 tasks: 13 approved, 4 more review, 0 blocked, 0 rejected
