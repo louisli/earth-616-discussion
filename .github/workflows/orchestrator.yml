@@ -1,9 +1,13 @@
 name: orchestrator
 
-# AGENTS.md section 12. Runs every 5 minutes; only one run at a time.
+# AGENTS.md section 12 and 14.7. Times are US Eastern (GitHub converts, DST included); one run at a time.
+# :55 of every odd hour = prep for the next cycle; :00 = prep fallback; :25 = review sheets; :47 = tally.
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '55 1-23/2 * * *'
+      timezone: 'America/New_York'
+    - cron: '0,25,47 0-22/2 * * *'
+      timezone: 'America/New_York'
   workflow_dispatch:
     inputs:
       dry_run:

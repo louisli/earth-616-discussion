@@ -183,12 +183,12 @@ Promotion happens only in a **live session with Lou**, with any one AI as partne
 
 | Minutes | Window | What happens |
 | --- | --- | --- |
-| before :00 | prep | The orchestrator chooses this cycle's work and writes the assignments (5.2) |
+| :55 (the hour before) | prep | The orchestrator chooses this cycle's work and writes the assignments (5.2). It checks again at :00, in case the :55 run was missed |
 | :00–:25 | **work** | Each bot breaks down the item assigned to it into a concept, branches and at least 3 leaves (7.2), and reworks its own tasks that came back. 25 minutes of work, then 5 minutes idle. **Commit by :25.** |
-| :25–:30 | — | The orchestrator builds the review sheets as soon as all work is in, and by :30 at the latest |
+| :25 | sheets | The orchestrator builds the review sheets from the work committed so far |
 | :30–:45 | **review** | Each bot reviews the tasks the other two wrote this cycle. **Commit by :45.** |
-| :45 | tally | The orchestrator counts the votes, opens task Issues and moves every task to its next state (7.5) |
-| :45–next even hour | closed | The orchestrator prepares the next cycle |
+| :47 | tally | The orchestrator counts the votes, opens task Issues and moves every task to its next state (7.5) |
+| :47–:55 | closed | Nothing runs until the next prep |
 
 That makes 12 cycles a day. A file committed after its deadline is ignored. A bot that misses a window loses its part for that cycle, and the orchestrator notes it on Issue #1.
 
@@ -387,7 +387,7 @@ reason: <one line: why it shouldn't be built, e.g. duplicate of T2, out of scope
 - **`maybe`:** worth doing, but not as written. `changes` is required.
 - **`no`:** don't build it.
 
-### 7.5 The tally (orchestrator, at :45)
+### 7.5 The tally (orchestrator, at :47)
 
 Each task is reviewed by the two bots that didn't write it (the item's author doesn't review its own tasks). The author's own vote counts as yes and isn't asked for.
 
@@ -574,10 +574,9 @@ git pull --rebase origin work/NNN && git push origin HEAD:work/NNN
 - **Then:**
     1. Comment on the item Issue: `[<me>] <cycle> breakdown committed (<n> tasks)`. For a rework or review, say so instead.
     2. Remove `todo:<me>` from the item Issue.
-    3. Nudge the orchestrator, ignoring any error: `gh workflow run orchestrator.yml -R louisli/earth-616-discussion`
-    4. Release your lock.
+    3. Release your lock.
 
-**Files that arrive late are ignored.** The orchestrator builds the review sheets from the breakdowns present when it builds them (by :30 at the latest), and tallies the reviews present at :45 or later.
+**Files that arrive late are ignored.** The orchestrator builds the review sheets at :25 from the breakdowns present then, and tallies the reviews present at :47.
 
 ### 11.7 On any failure
 
@@ -590,7 +589,7 @@ When you can't parse something, the files disagree with the labels, git fails, o
 
 ## 12. Runbook: orchestrator
 
-**One script, no model.** Code is in `orchestrator/`. It runs every 5 minutes as a GitHub Action, with one run at a time, plus whenever a bot nudges it.
+**One script, no model.** Code is in `orchestrator/`. It runs as a GitHub Action at fixed times in each cycle, with one run at a time: **:55** of the hour before (prep), **:00** (prep again, only if :55 was missed), **:25** (review sheets) and **:47** (tally). That's 48 runs a day. Nothing else starts it.
 
 - **Every pass is idempotent:** it reads the labels and files, and does only what's still missing.
 - **Commits** go out as `orchestrator-bot`, with messages starting `[orchestrator]`.
@@ -601,9 +600,9 @@ When you can't parse something, the files disagree with the labels, git fails, o
 | 0 | **Setup** | For each topic folder with no topic Issue: creates the topic Issue, one item Issue per seed (as sub-issues, `state:todo`, priority and dependencies from the seed), the work branch `work/NNN` with each `item.md`, and any missing labels. Merges `main` into every work branch that's behind. |
 | 1 | **Housekeeping** | Removes dead locks (6.4). Counts and clears `bot-error`: 3 per role on one item → `state:needs-lou`. Gives every Issue in `state:needs-lou` without a `[need-lou #n]` prefix (for example, set by the auditor) its prefix and summary comment (9.1). |
 | 2 | **Lou** | Executes the commands on Issues whose title shows `[updated-lou…]` (9). |
-| 3 | **Prep** | From :45 on (or while the current cycle has no assignments yet), prepares the **next** cycle once (5.2). Every `state:more-review` task with `reworks` < 2 → `state:rework`, `reworks` + 1, and its author gets a rework line in its item's `assignments.md`. Up to 3 ready items get one bot each, in rotating order → `state:working`, `phase: work`, `author` in the header. Adds `todo:<bot>` to every item Issue where that bot has work. **A cycle whose windows passed unused** (the orchestrator was down) is dropped: its items go back to `state:todo`, and its reworks to `state:more-review` with `reworks` − 1. Notes it on #1. New items are assigned only while `start_cycles` is `true` in `orchestrator/config.json`. |
-| 4 | **Review sheets** | Per item in the current cycle, from :25 once its assigned work file is present, or from :30 regardless. Parses the breakdown; a file that doesn't parse counts as missing. Numbers the new tasks `T<n>`, continuing the item's numbering. Writes `review-sheet-<bot>.md` for each of the other two bots (new tasks first, then reworks with their requested changes and the author's response). Adds the review section to `assignments.md`, `todo:<bot>` for each reviewer, and `phase: review`. A rework with no rework file isn't reviewed: it goes back to `state:more-review` with `reworks` − 1. An item with nothing to review is closed: a new item goes back to `state:todo`. |
-| 5 | **Tally** | From :45 in the current cycle. Reads the review files present, and computes every outcome (7.5). Writes `result.md`, plus `tasks/T<n>/task.md` for every task. Creates a task Issue (a sub-issue of the item) for every task except first-review rejections. Updates the reworked tasks' Issues, removes all `todo:` labels, sets the item to `state:done` or `state:waiting` with `phase: closed`, and comments the results on the item Issue. Notes any bot that missed a window on #1. |
+| 3 | **Prep** | At :55, prepares the **next** cycle once (5.2). At :00 it does the same for the current cycle if nothing was prepared. Every `state:more-review` task with `reworks` < 2 → `state:rework`, `reworks` + 1, and its author gets a rework line in its item's `assignments.md`. Up to 3 ready items get one bot each, in rotating order → `state:working`, `phase: work`, `author` in the header. Adds `todo:<bot>` to every item Issue where that bot has work. **A cycle whose windows passed unused** (the orchestrator was down) is dropped: its items go back to `state:todo`, and its reworks to `state:more-review` with `reworks` − 1. Notes it on #1. New items are assigned only while `start_cycles` is `true` in `orchestrator/config.json`. |
+| 4 | **Review sheets** | At :25, per item in the current cycle, from whatever work files are present. Parses the breakdown; a file that doesn't parse counts as missing. Numbers the new tasks `T<n>`, continuing the item's numbering. Writes `review-sheet-<bot>.md` for each of the other two bots (new tasks first, then reworks with their requested changes and the author's response). Adds the review section to `assignments.md`, `todo:<bot>` for each reviewer, and `phase: review`. A rework with no rework file isn't reviewed: it goes back to `state:more-review` with `reworks` − 1. An item with nothing to review is closed: a new item goes back to `state:todo`. |
+| 5 | **Tally** | At :47 in the current cycle. Reads the review files present, and computes every outcome (7.5). Writes `result.md`, plus `tasks/T<n>/task.md` for every task. Creates a task Issue (a sub-issue of the item) for every task except first-review rejections. Updates the reworked tasks' Issues, removes all `todo:` labels, sets the item to `state:done` or `state:waiting` with `phase: closed`, and comments the results on the item Issue. Notes any bot that missed a window on #1. |
 | 6 | **Close-out** | A topic whose items are all done, rejected or parked, with no task left in approved, blocked, more-review, rework or needs-lou, moves to `topics/done/` with `topic-state:done`. |
 | 7 | **Sync** | Updates `MASTER.md`, every state header, and the task Issues' bodies from `task.md`. Brings each `task.md`'s `state` and history up to date with its labels (for example, after the auditor's decisions). |
 
@@ -785,7 +784,7 @@ Every role's schedule is set **only here**. Lou approves a schedule by changing 
 | `claude` | Grok bot's box, started by the Grok bot (14.3a) | whenever the Grok bot's run finds `todo:claude` | runbook (11); no schedule of its own | approved |
 | `muse` | Muse's own cron | at **:00, :15 and :30 of every even hour** (36 runs a day) | cheap check (14.8); runbook (11) if there's work. Muse's cron can't gate, so each run wakes the model briefly | approved |
 | `auditor` | Claude's cloud scheduler | **every 6 hours: 00:50, 06:50, 12:50, 18:50** (4 runs a day) | cheap check (14.8); audits and exports all approved and blocked tasks (13) | approved |
-| orchestrator | GitHub Action | every 5 minutes, plus a bot's nudge (11.6) | prep, review sheets, tally (12) | pending: off until Lou says go |
+| orchestrator | GitHub Action (schedule in `America/New_York`) | **:55** of every odd hour, and **:00, :25, :47** of every even hour (48 runs a day) | prep, review sheets, tally (12) | pending: off until Lou says go |
 
 **What each run does:**
 - **:00** starts the work window.
@@ -899,6 +898,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Orchestrator runs only at :55 (prep), :00 (prep fallback), :25 (sheets) and :47 (tally) instead of every 5 minutes; tally moved from :45 to :47; bots no longer nudge it | 5.1, 7.5, 11.6, 12, 14.7 | `groky`, `claude`, `muse`: drop the nudge step (same thread) |
 | 2026-10-24 | Accounts made explicit: Grok's and Muse's bots use `thelouis7789`; everything on Claude's side (claude.ai, Claude Code, Claude cloud, the auditor) uses `louisli` | header, 0.8, 14.1 | — |
 | 2026-10-24 | Breakdowns are one proposal as a tree: concept → branches → leaves; at least 3 leaves, no maximum (was at most 10 tasks) | 1, 5.1, 7.2, 7.4, 8, 10.2 | `groky`, `claude`, `muse`, `auditor`: same thread, `claude-code_all/2026-10-24-even-hour-cycles.md` |
 | 2026-10-24 | **Even-hour cycles replace rounds.** Every even hour: each bot breaks down its own item, one bot per item, mapped in `assignments.md` (:00–:25); the other two review it with yes / no / maybe (:30–:45), the orchestrator tallies; more-review tasks are reworked by their author up to 2 times, then blocked; the auditor exports approved tasks every 6 hours as ideas to the topic's target repo. Grok and Muse run at :00, :15, :30 of even hours; new cheap check; sessions and session labels removed | 1–14 | `groky`, `claude`, `muse`, `auditor`: thread `claude-code_all/2026-10-24-even-hour-cycles.md` |

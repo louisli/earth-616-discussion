@@ -4,7 +4,7 @@ import { parseHeader, withHeader, withHumanPart, titlePrefix, stripPrefix, withN
 import * as F from './formats.js';
 import { BOTS, ROLES, tallyOutcome, readyItems, botOrder, parseCommand, COMMANDS_FOR } from './rules.js';
 import { standardLabels } from './labels.js';
-import { cycleAt, nextCycleId, cycleOrdinal, WORK_END, REVIEW_START, REVIEW_END } from './clock.js';
+import { cycleAt, nextCycleId, cycleOrdinal, WORK_END, TALLY_AT, PREP_AT } from './clock.js';
 
 const TOPIC_STATES = ['active', 'done', 'parked', 'rejected'];
 const OPEN_TASK_STATES = ['approved', 'blocked', 'more-review', 'rework', 'needs-lou'];
@@ -526,7 +526,7 @@ export class Orchestrator {
     const cur = cycleAt(this.now());
     for (const { issue, h } of this.items({ open: true })) {
       if (!['work', 'review'].includes(h.phase) || !h.cycle) continue;
-      const over = String(h.cycle) < cur.id || (String(h.cycle) === cur.id && cur.minute >= REVIEW_END);
+      const over = String(h.cycle) < cur.id || (String(h.cycle) === cur.id && cur.minute >= TALLY_AT);
       if (!over) continue;
       try {
         if (h.phase === 'review') await this.tally(issue);
@@ -672,25 +672,23 @@ export class Orchestrator {
 
   async passSheets() {
     const cur = cycleAt(this.now());
-    if (cur.minute < WORK_END || cur.minute >= REVIEW_END) return;
+    if (cur.minute < WORK_END || cur.minute >= TALLY_AT) return;
     for (const { issue, h } of this.items({ open: true })) {
       if (h.phase !== 'work' || String(h.cycle) !== cur.id) continue;
       try {
-        await this.buildSheets(issue, cur.minute >= REVIEW_START);
+        await this.buildSheets(issue);
       } catch (e) {
         this.note(`#${issue.number}: review sheets failed: ${e.message}`);
       }
     }
   }
 
-  async buildSheets(issue, force) {
+  async buildSheets(issue) {
     const ctx = this.itemCtx(issue);
     const cycle = String(ctx.h.cycle);
     const cdir = ctx.cdir(cycle);
     const a = F.parseAssignments(ctx.wt.read(`${cdir}/assignments.md`));
     if (!a) throw new Error('assignments.md missing');
-    const present = (w) => ctx.wt.exists(`${cdir}/${w.what === 'breakdown' ? `breakdown-${w.bot}.md` : `rework-${w.task}-${w.bot}.md`}`);
-    if (!force && !a.work.every(present)) return;
 
     const fresh = []; // { id, author, ...task }
     let proposal = null;
@@ -759,7 +757,7 @@ export class Orchestrator {
   async passPrep() {
     const now = this.now();
     const cur = cycleAt(now);
-    const target = cur.minute >= REVIEW_END ? nextCycleId(now) : cur.minute < 15 ? cur.id : null;
+    const target = cur.minute >= PREP_AT ? nextCycleId(now) : cur.minute < 15 ? cur.id : null;
     if (!target) return;
     const topicState = this.topicStates();
     const all = this.items();

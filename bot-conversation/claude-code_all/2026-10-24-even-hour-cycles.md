@@ -10,7 +10,7 @@ The debate loop no longer uses rounds, turns, ballots, sessions or `session:` la
 
 - **:00–:25, work.** Each bot breaks down the item assigned to it: **one bot per item**, mapped in that item's `assignments.md`. The output is **one proposal as a tree** (7.2): a concept, its branches, and at least 3 atomic leaves (no maximum), each leaf with a title, short description and done-when check. Reworks of your own tasks happen here too. **Commit by :25.**
 - **:30–:45, review.** You review the tasks the other two bots wrote: yes, no, or maybe with changes. **Commit by :45.**
-- **:45, tally** (orchestrator):
+- **:47, tally** (orchestrator, which runs only at :55, :00, :25 and :47):
     - yes + yes → approved
     - no + no → rejected
     - anything else → more review: the author reworks it next cycle. After 2 reworks it's blocked.

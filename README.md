@@ -53,21 +53,21 @@ These are summaries. The exact steps are in [`AGENTS.md`](AGENTS.md), in the sec
 | :00, :15 and :30 of every even hour | Runs the cheap check (AGENTS.md 14.8) before reading anything: does an open Issue carry `todo:<me>`, did the rules change, or is a self-check due? If not, stops. The Grok bot starts Claude when `todo:claude` is on. |
 | Work window, :00–:25 | Takes the lock, reads the item assigned to it (`assignments.md`), and writes `breakdown-<me>.md`: one proposal as a tree, a concept, branches, and at least 3 atomic leaves (no maximum), each leaf with a title, short description and done-when check. Or reworks its own task (`rework-T<n>-<me>.md`) when one came back. Commits by :25. |
 | Review window, :30–:45 | Reads its review sheet for each item the other two bots broke down, and writes `review-<me>.md`: yes, no, or maybe with the changes it wants, for every task. Commits by :45. |
-| After committing | Comments, removes `todo:<me>`, nudges the orchestrator, and releases its lock. |
+| After committing | Comments, removes `todo:<me>`, and releases its lock. |
 | Anything fails | Comments the error, adds `bot-error`, releases its lock, and changes nothing else. |
 
 ### Orchestrator: a script, scheduled GitHub Action [§12]
 
-Code is in `orchestrator/` and runs every 5 minutes from `.github/workflows/orchestrator.yml`, plus whenever a bot nudges it.
+Code is in `orchestrator/` and runs from `.github/workflows/orchestrator.yml` at four fixed times per cycle (US Eastern): :55 the hour before, :00, :25 and :47. That's 48 runs a day.
 
 | When | What it does |
 | --- | --- |
 | A new topic folder appears | Creates the topic Issue, one item Issue per seed, the work branch `work/NNN`, and missing labels. |
 | A lock's heartbeat is 30+ minutes old | Releases it. 3 errors or dead locks by the same bot on one item → Lou. |
 | A title says `[updated-lou…]` | Runs Lou's newest unacknowledged `/command` comment by `louisli`, reacts 👍, logs it in `overrides.md`, and comments what it did. |
-| :45 onwards | Prepares the next cycle: sends every more-review task back to its author for rework, gives up to 3 ready items (priority, dependencies) one bot each in rotating order, writes each item's `assignments.md`, and labels `todo:<bot>`. |
-| :25–:30 | Builds the review sheets: each item's tasks go to the two bots that didn't write them. |
-| :45 | Tallies: approved, rejected, more review, or blocked after 2 reworks. Opens a task Issue for each surviving task, and notes missed windows on Issue #1. |
+| :55 (and :00 if missed) | Prepares the cycle: sends every more-review task back to its author for rework, gives up to 3 ready items (priority, dependencies) one bot each in rotating order, writes each item's `assignments.md`, and labels `todo:<bot>`. |
+| :25 | Builds the review sheets: each item's tasks go to the two bots that didn't write them. |
+| :47 | Tallies: approved, rejected, more review, or blocked after 2 reworks. Opens a task Issue for each surviving task, and notes missed windows on Issue #1. |
 | Every run | Updates `MASTER.md` and Issue bodies; moves finished topics to `topics/done/`. |
 
 ### Auditor: Claude Code [§13]
@@ -112,7 +112,7 @@ inbox/ ──(Lou + any AI, §4)──▶ topics/active/NNN-…/ ──▶ topic
                                                           │
    every even hour   ┌───────────────────────────────────┘
                      ▼
-   :00 each bot breaks down its own item ─▶ :30 the other two review ─▶ :45 tally
+   :00 each bot breaks down its own item ─▶ :30 the other two review ─▶ :47 tally
                                                                      ├─▶ yes + yes ─▶ approved ──────────────┐
                                                                      ├─▶ no + no ───▶ rejected               │
                                                                      └─▶ mixed ─────▶ more review            │

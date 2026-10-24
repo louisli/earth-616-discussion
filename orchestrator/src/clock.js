@@ -6,7 +6,9 @@ const fmt = new Intl.DateTimeFormat('en-US', {
 
 export const WORK_END = 25;
 export const REVIEW_START = 30;
-export const REVIEW_END = 45;
+export const REVIEW_END = 45; // bots' review deadline
+export const TALLY_AT = 47;
+export const PREP_AT = 115; // :55 of the hour before the next cycle
 
 export function etParts(d) {
   const p = Object.fromEntries(fmt.formatToParts(d).map((x) => [x.type, x.value]));

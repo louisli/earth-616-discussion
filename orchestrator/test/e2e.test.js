@@ -63,7 +63,7 @@ const at = (env, minute) => {
   const c = cycleAt(env.store.clock);
   env.store.advance(minute - c.minute);
 };
-const nextCycle = (env) => env.store.advance(120 - cycleAt(env.store.clock).minute + 5);
+const nextCycle = (env) => env.store.advance(120 - cycleAt(env.store.clock).minute);
 
 // ---------- simulated bots (AGENTS.md 11) ----------
 
@@ -186,16 +186,18 @@ async function lou(env) {
 }
 
 async function cycle(env, opts = {}) {
-  at(env, 5);
-  await runOrch(env);
+  at(env, 0);
+  await runOrch(env); // :00 (prep fallback; a no-op once :55 prepared the cycle)
   at(env, 10);
   await botsWork(env, opts);
   at(env, 26);
   await runOrch(env);
   at(env, 31);
   await botsWork(env, opts);
-  at(env, 46);
+  at(env, 47);
   await runOrch(env);
+  at(env, 115);
+  await runOrch(env); // :55 prep for the next cycle
   nextCycle(env);
 }
 
