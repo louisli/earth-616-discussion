@@ -1,4 +1,7 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "07"
 title: Architecture, build plan and costs
@@ -6,9 +9,6 @@ priority: 4
 depends_on:
   - "04"
   - "05"
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 07 Architecture, build plan and costs
