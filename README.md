@@ -156,7 +156,7 @@ Each topic's cycle work (assignments, breakdowns, review sheets, reviews, tallie
 | --- | --- |
 | Rulebook (`AGENTS.md`), labels, topic 001 seeds | ✅ ready (reviewed by an independent pass, and 28 gaps fixed) |
 | Shared bot account (one GitHub machine account) + its token in each harness | ✅ done |
-| Orchestrator script + GitHub Action | ✅ rebuilt for even-hour cycles and tested. The workflow is **switched off** until Lou says go. |
+| Orchestrator script + GitHub Action | ✅ rebuilt for even-hour cycles and tested. **Live since 2026-10-24** (Lou said go): runs at :55, :00, :25 and :47 ET; `start_cycles` is `true`. |
 | `ORCH_SECRET` repo secret | ✅ added (no longer needed now that reviews are open; harmless to keep) |
 | Bot check-ins (`agents/*.md`) | ⏳ none yet; each AI creates its own on first check-in |
 

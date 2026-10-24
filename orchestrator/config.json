@@ -1,5 +1,5 @@
 {
-  "start_cycles": false,
+  "start_cycles": true,
   "lock_timeout_minutes": 30,
   "lou_login": "louisli",
   "orchestrator_login": "github-actions[bot]"

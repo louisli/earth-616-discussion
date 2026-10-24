@@ -784,7 +784,7 @@ Every role's schedule is set **only here**. Lou approves a schedule by changing 
 | `claude` | Grok bot's box, started by the Grok bot (14.3a) | whenever the Grok bot's run finds `todo:claude` | runbook (11); no schedule of its own | approved |
 | `muse` | Muse's own cron | at **:00, :15 and :30 of every even hour** (36 runs a day) | cheap check (14.8); runbook (11) if there's work. Muse's cron can't gate, so each run wakes the model briefly | approved |
 | `auditor` | Claude's cloud scheduler | **every 6 hours: 00:50, 06:50, 12:50, 18:50** (4 runs a day) | cheap check (14.8); audits and exports all approved and blocked tasks (13) | approved |
-| orchestrator | GitHub Action (schedule in `America/New_York`) | **:55** of every odd hour, and **:00, :25, :47** of every even hour (48 runs a day) | prep, review sheets, tally (12) | pending: off until Lou says go |
+| orchestrator | GitHub Action (schedule in `America/New_York`) | **:55** of every odd hour, and **:00, :25, :47** of every even hour (48 runs a day) | prep, review sheets, tally (12) | approved (live 2026-10-24) |
 
 **What each run does:**
 - **:00** starts the work window.
@@ -898,6 +898,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Lou said go: orchestrator workflow on, `start_cycles` true; first prep at 05:55 ET for the 06:00 cycle | 14.7 | — |
 | 2026-10-24 | Orchestrator runs only at :55 (prep), :00 (prep fallback), :25 (sheets) and :47 (tally) instead of every 5 minutes; tally moved from :45 to :47; bots no longer nudge it | 5.1, 7.5, 11.6, 12, 14.7 | `groky`, `claude`, `muse`: drop the nudge step (same thread) |
 | 2026-10-24 | Accounts made explicit: Grok's and Muse's bots use `thelouis7789`; everything on Claude's side (claude.ai, Claude Code, Claude cloud, the auditor) uses `louisli` | header, 0.8, 14.1 | — |
 | 2026-10-24 | Breakdowns are one proposal as a tree: concept → branches → leaves; at least 3 leaves, no maximum (was at most 10 tasks) | 1, 5.1, 7.2, 7.4, 8, 10.2 | `groky`, `claude`, `muse`, `auditor`: same thread, `claude-code_all/2026-10-24-even-hour-cycles.md` |
