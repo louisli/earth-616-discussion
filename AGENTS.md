@@ -9,6 +9,7 @@
     Sections 0–3 apply to both.
 - **Tools:** work only through `git` and `gh`.
 - **Lou:** GitHub login `louisli`.
+- **Shared bot account:** GitHub login `thelouis7789` (profile name `Lou[bot]`). Lou confirmed it on 2026-10-24.
 
 ## 0. Ground rules for every AI
 
@@ -871,6 +872,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Shared bot account named (`thelouis7789`) | header | Grok bot: see thread `claude-code_groky/2026-10-24-check-in.md` |
 | 2026-10-24 | The Grok bot owns and self-checks both its schedules; an unapproved schedule isn't a problem | 14.3a, 14.6 | Grok bot and `claude`: update your check-in files at the next self-check |
 | 2026-10-24 | One `<from>_all` thread when several bots get the same message | 15.1 | — |
 | 2026-10-24 | Rule: instructions live in the repo; this change log | 0.10, 16 | — |
