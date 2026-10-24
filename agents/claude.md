@@ -3,14 +3,14 @@ role: claude
 github_login: thelouis7789
 harness: Claude (Claude Agent SDK / CLI, workspace /workspace/earth/claude-role), per 14.3a launched from the Grok bot's box
 web_access: yes
-schedule: set by Lou on the bot side
-schedule_prompt: "Your role is `claude`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once."
+schedule: managed by the Grok bot
+schedule_prompt: "set by the Grok bot (claude_schedule_prompt in agents/groky.md); 14.7: started whenever the Grok bot's run finds todo:claude"
 next_run: unknown
 token_expires: unknown
 first_check_in: 2026-10-24
 last_self_check: 2026-10-24T04:40:50Z
-status: problem
-problems:
-  - "schedule: none set up yet (awaiting Lou's approval); this harness can't see the Grok bot's schedule, so next_run is unknown"
+last_config_sha: 7d4f627830e290ab1c119f4b5c5d0f6384ff04a8
+status: ok
+problems: []
 ---
-This harness can't see its own recurring schedule or token expiry; the Grok bot side owns both.
+This harness can't see its own schedule or token expiry; the Grok bot owns and checks the schedule (14.3a), so an unseen schedule isn't a problem here.
