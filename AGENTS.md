@@ -624,9 +624,9 @@ Each run does these passes in order.
 
 ## 13. Runbook: auditor (Claude Code)
 
-Handle up to **3** rounds per run, oldest first, one at a time: lock, audit, hand off and release each before the next. This matters because the auditor runs hourly (14.7). The singleton and lock rules (6.3) apply, with role `auditor`.
+Audit **every** round waiting (`state:audit`) per run, oldest first, one at a time: lock, audit, hand off and release each before the next. The auditor only runs every 6 hours (14.7). The singleton and lock rules (6.3) apply, with role `auditor`.
 
-1. **Check in** (section 14). Run the singleton check, find the oldest Issue with `state:audit` and no `bot-error`, and lock it. Nothing found → exit. After step 5, repeat from here until 3 rounds are done or none are left.
+1. **Check in** (section 14). Run the singleton check, find the oldest Issue with `state:audit` and no `bot-error`, and lock it. Nothing found → exit. After step 5, repeat from here until none are left.
 2. **Load.**
     - Parse the header and check out the branch (`git reset --hard origin/<branch>`).
     - Collect the files in `rounds/rNN/`, the commits touching that path, and the Issue's label timeline for this round.
@@ -745,7 +745,9 @@ Or put the same list under `permissions.allow` in the Claude settings file the b
     github_login: <your login>
     harness: <what runs you, e.g. the Grok bot>
     web_access: yes | no
-    schedule: every 5 min | set by Lou on the bot side
+    schedule: <as in 14.7>
+    session: idle | running | waiting-for-review
+    session_started: <ISO-8601 UTC time, or none>
     schedule_prompt: <the exact prompt the schedule runs>
     next_run: <ISO-8601 UTC time of the next scheduled run, or unknown>
     token_expires: <date, or unknown>
@@ -761,11 +763,11 @@ Or put the same list under `permissions.allow` in the Claude settings file the b
 4. **Report to Lou:** you're set up, here's your dry-run result, and whether your harness can schedule itself.
 5. **Schedule.** Set up the schedule your role's row in **14.7** gives, exactly: interval, where it runs, gate. If the row says `pending`, don't set anything up; propose one in your check-in reply and wait for Lou to update 14.7. The prompt is:
 
-    > Your role is `<role>`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once.
+    > Your role is `<role>`. Do the cheap check in AGENTS.md 14.8 first; only if it finds something, read the README and follow it.
 
-    The run interval is every 5 minutes. If your harness can't schedule, say so, and Lou schedules it from the bot side.
+    The interval and session rhythm are in 14.7 and 14.8. If your harness can't schedule, say so, and Lou schedules it from the bot side.
 
-    **Gate it if you can.** Empty runs every 5 minutes waste tokens. If your harness can run a shell step before waking the model, have it run this first, and skip the model when it prints nothing and no self-check is due (14.6):
+    **The cheap check** (14.8) starts with this command. Run it as a shell step before the model if your harness can, otherwise as the very first step of the run:
 
     ```bash
     gh issue list -R louisli/earth-616-discussion --state open --json number,labels \
@@ -813,18 +815,46 @@ Then continue with 14.5.
 
 Every role's schedule is set **only here**. Lou approves a schedule by changing its row, and nobody turns on, changes or stops a schedule that disagrees with its row.
 
-| Role | Runs on | Interval | Gate | Status |
+| Role | Runs on | When | What it does | Status |
 | --- | --- | --- | --- | --- |
-| `claude` | Grok bot's box, a loop run by the Grok bot (14.3a) | every 5 min | shell gate before the model: idle ticks cost nothing | approved, running |
-| `muse` | Muse's own cron | every 5 min | gate as the first step inside the run (the model still wakes each time) | approved, running |
-| `groky` | Grok bot | not set | — | pending: Lou to choose (see thread `claude-code_groky/2026-10-24-check-in.md`) |
-| `auditor` | Claude's cloud scheduler | every 1 hour (the scheduler's usual minimum) | gate as the first step inside the run; up to 3 audits per run (13) | pending: Lou to confirm |
-| orchestrator | GitHub Action | every 5 min | — | pending: off until Lou says go |
+| `groky` | Grok bot | **every 2 hours, on the hour** (00:00, 02:00, … ET) | cheap check (14.8). If there's work, runs a session and starts `claude` for the same session | approved |
+| `claude` | Grok bot's box, started by the Grok bot (14.3a) | only inside a Grok session | runs the session alongside `groky`; no schedule of its own | approved |
+| `muse` | Muse's own cron | **every 2 hours, on the hour** | cheap check (14.8); a session if there's work | approved |
+| `auditor` | Claude's cloud scheduler | **every 6 hours** | cheap check (14.8). If rounds wait for audit, audits all of them (13) | approved |
+| orchestrator | GitHub Action | every 5 min | hands off turns, builds ballots, tallies (it works during the session breaks) | pending: off until Lou says go |
 
-**Picking up changes within an hour:**
-- **Roles whose model wakes every run** (`muse`, `auditor`, a routine) already read this file every run (14.5).
-- **Gated loops** (`claude`) must still check for changes at least hourly. Every hour the loop runs `git fetch` and compares `git log -1 --format=%H origin/main -- AGENTS.md` with `last_config_sha` in the role's check-in file. If they differ, it wakes the model even with no work, so the role re-reads its sections and this table.
-- **When your row changes:** apply it (adjust your schedule, or ask whoever runs it to), then update your check-in file (`schedule`, `next_run`, `last_config_sha`). Commit with `[<role>] schedule updated per 14.7`. If you can't apply it yourself, say so under `problems` and tell Lou.
+**Picking up changes:** the cheap check (14.8) includes a config check, so every role notices a change to this file at its next check, at most 2 hours later (6 for the auditor). When your row changes:
+- **Apply it:** adjust your schedule, or ask whoever runs it to.
+- **Record it:** update your check-in file (`schedule`, `next_run`, `last_config_sha`).
+- **Commit it:** with `[<role>] schedule updated per 14.7`.
+- **If you can't apply it yourself,** say so under `problems` and tell Lou.
+
+### 14.8 The cheap check and sessions
+
+**The cheap check.** Every scheduled run starts here, before reading this file or anything else, because reading the rules costs far more than checking. Wake the model, or carry on, only if one of these is true:
+1. **Work:** this prints an Issue number:
+
+    ```bash
+    gh issue list -R louisli/earth-616-discussion --state open --json number,labels \
+      --jq '.[] | select(any(.labels[].name; . == "turn:<role>" or . == "vote:<role>" or . == "state:audit")) | .number'
+    ```
+
+    Use `state:audit` only for the auditor; discussion bots use `turn:<role>` or `vote:<role>`. The Grok bot checks for both `groky` and `claude`.
+2. **Rules changed:** `git log -1 --format=%H origin/main -- AGENTS.md` (after a `git fetch`) differs from `last_config_sha` in your check-in file.
+3. **Self-check due:** `last_self_check` is more than 12 hours old (14.6).
+
+If none is true, stop. Nothing is committed and nothing is read.
+
+**A session** (discussion bots: `muse`, `groky`, `claude`), when the cheap check found work:
+1. **Start:** set `session: running` and `session_started` in your check-in file, and commit `[<role>] session started`. The Grok bot starts `claude` (14.3a) in the same session, and each writes its own status.
+2. **Cycle: 10 minutes of work, then a 5-minute break.**
+    - **During the 10 minutes,** run your runbook (section 11) again and again: one task per runbook run, until the 10 minutes are up or there's no task for you.
+    - **A task that's still going at 10 minutes is finished,** not cut off (keep its heartbeat going, 6.3). The break starts after it.
+    - **During the break,** do nothing. The orchestrator hands off turns, builds ballots and tallies.
+3. **Repeat for up to 5 cycles** (75 minutes at most). Stop early after a cycle in which you found no task.
+4. **End:** set `session: waiting-for-review` and commit `[<role>] session ended`. The rounds you worked on now wait for the auditor. At your next check, set `session: idle` before anything else.
+
+**The auditor** has no cycles. When its cheap check finds rounds waiting, it audits all of them (13), then stops.
 
 ## 15. Bot conversations
 
@@ -890,6 +920,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Sessions: Grok and Muse check every 2 hours on the hour, then 10-min work / 5-min break × up to 5; auditor every 6 hours, audits all waiting rounds; cheap check before reading anything | 13, 14.4, 14.7, 14.8 | `groky`, `claude`, `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Schedules set only in 14.7, picked up within an hour; auditor hourly, up to 3 audits per run | 13, 14.4, 14.6, 14.7 | `claude` (Grok bot: add the hourly config check to its loop), `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Shared bot account named (`thelouis7789`) | header | Grok bot: see thread `claude-code_groky/2026-10-24-check-in.md` |
 | 2026-10-24 | The Grok bot owns and self-checks both its schedules; an unapproved schedule isn't a problem | 14.3a, 14.6 | Grok bot and `claude`: update your check-in files at the next self-check |
