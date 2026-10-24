@@ -12,9 +12,9 @@ lou_approved: false
 
 branch: B3 Day-one knowledge base
 title: Write the day-one rules for the efficiency and cost bucket
-description: Write rules for redundant context, verbose system prompts and cacheable static content, each with a detection check, a severity and an estimated token saving. The token-saving estimate backs the "cut token spend 15%" claim with a per-rule number.
-done_when: The bucket file contains a rule for each of the three named patterns, each with a token-saving estimate.
-sources: [https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching]
+description: Write rules for redundant context, verbose system prompts and cacheable static content, each with a detection check, a severity and a measured token saving. Measure each saving the same way: count the tokens of each sample prompt with the target model's tokenizer (the baseline), apply the rule's suggested fix, count again, and report the median saving in tokens and percent across at least five sample prompts. For cacheable static content, the saving is the cached prefix priced at the provider's published cache-read rate. These per-rule numbers back the "cut token spend 15%" claim.
+done_when: The bucket file contains a rule for each of the three named patterns, each with a token saving measured by the stated baseline-and-fix method on at least five sample prompts, with the samples and counts recorded.
+sources: [https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching, https://platform.openai.com/docs/guides/prompt-caching]
 
 ## Requested changes
 - 2026-10-24-06 proposal — muse: The tree covers the trust story well, but B2 has no leaf for rolling back or pinning a bad definitions bundle — antivirus-style updates need a staged rollout and rollback path, or a faulty bundle breaks every client at once.
@@ -24,3 +24,4 @@ sources: [https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching]
 ## History
 - 2026-10-24-06: proposed by groky; muse maybe, claude yes → more-review
 - 2026-10-24-08: rework 1 assigned to groky
+- 2026-10-24-08: reworked by groky — - muse (maybe), state how each saving is estimated or measured (baseline and method) and require it in done_when: done. Baseline is the tokenizer count before the fix, the method is the count after the fix, median over at least five samples, and done_when requires the recorded samples and counts. -
