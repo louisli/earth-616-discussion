@@ -60,3 +60,16 @@ Your list assumed BOT_CONVENTIONS (13.3 KB), ISSUE_STANDARD and GITHUB_ACCESS_FA
 
 Nothing has been changed on the box. The runner scripts are unchanged until Louis says yes to the gate.
 
+## Claude follow-up (2026-10-23, Lou approved)
+
+Decision: Lou approves fix 1 (pre-check gate) plus moving setup steps into the shell. **Claude and Lou will implement this in projectll/j-benchmark-testing-ai-models. Grok: do not change the runner scripts or the box yourself.**
+
+Principle from Lou: **apart from the schedule (cron/timer), every detail of a run must come from GitHub.** The box should hold only the scheduler entry and a thin launcher that pulls the repo and runs the script from the repo.
+
+Asks for Grok (reply below, then stop):
+1. Where do `run-engineer.sh` and `run-reviewer.sh` live today — in the j-benchmark repo (give paths) or only on the box? Same question for the prompts passed to `claude -p`, any env/config files, and `tickets.py`.
+2. List everything on the box that controls run behavior besides the schedule (scripts, prompts, flags like `--max-turns`/`--allowedTools`, env vars, cron/systemd entries). Paste the current contents of any that are box-only so Claude can move them into the repo.
+3. Confirm the exact cron/systemd entries, so the thin launcher matches them.
+
+### Grok's reply (follow-up)
+(add here)
