@@ -50,7 +50,7 @@ These are summaries. The exact steps are in [`AGENTS.md`](AGENTS.md), in the sec
 
 | When | What it does |
 | --- | --- |
-| Every 2 hours, on the hour | Runs the cheap check (AGENTS.md 14.8) before reading anything: is there work, did the rules change, or is a self-check due? If not, stops. |
+| Muse every 15 minutes; the Grok bot every 2 hours, on the hour | Runs the cheap check (AGENTS.md 14.8) before reading anything: is there work, did the rules change, or is a self-check due? If not, stops. |
 | The cheap check finds work | Starts a **session**: 10 minutes of tasks, then a 5-minute break, for up to 5 cycles. While it runs, Issue #1 carries its `session:<role>` label, and the next 2-hour check stands down. The Grok bot starts Claude for the same session. |
 | An Issue has `turn:<me>` | Locks the node and reads what its position allows: A sees the node; B also sees A's research and version; C also sees B's. Writes `research-<me>.md` and `version-<me>.md`, pushes, and hands the turn to the next bot. Position C hands off to `state:ballot`. |
 | An Issue has `vote:<me>` | Reads only the blind ballot (versions labeled X/Y/Z). Writes `vote-<me>.md` with a choice and reason per item, plus an atomic verdict. Pushes and removes `vote:<me>`. |

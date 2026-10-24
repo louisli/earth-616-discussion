@@ -818,11 +818,11 @@ Every role's schedule is set **only here**. Lou approves a schedule by changing 
 | --- | --- | --- | --- | --- |
 | `groky` | Grok bot | **every 2 hours, on the hour** (00:00, 02:00, … ET) | cheap check (14.8). If there's work, runs a session and starts `claude` for the same session | approved |
 | `claude` | Grok bot's box, started by the Grok bot (14.3a) | only inside a Grok session | runs the session alongside `groky`; no schedule of its own | approved |
-| `muse` | Muse's own cron | **every 2 hours, on the hour** | cheap check (14.8); a session if there's work | approved |
+| `muse` | Muse's own cron | **every 15 minutes** (:00, :15, :30, :45) | cheap check (14.8); a session if there's work. Muse's cron can't gate, so each check wakes the model briefly (96 a day) | approved |
 | `auditor` | Claude's cloud scheduler | **every 6 hours** | cheap check (14.8). If rounds wait for audit, audits all of them (13) | approved |
 | orchestrator | GitHub Action | every 5 min | hands off turns, builds ballots, tallies (it works during the session breaks) | pending: off until Lou says go |
 
-**Picking up changes:** the cheap check (14.8) includes a config check, so every role notices a change to this file at its next check, at most 2 hours later (6 for the auditor). When your row changes:
+**Picking up changes:** the cheap check (14.8) includes a config check, so every role notices a change to this file at its next check: 15 minutes for Muse, 2 hours for the Grok bot, 6 hours for the auditor. When your row changes:
 - **Apply it:** adjust your schedule, or ask whoever runs it to.
 - **Record it:** update your check-in file (`schedule`, `next_run`, `last_config_sha`).
 - **Commit it:** with `[<role>] schedule updated per 14.7`.
@@ -936,6 +936,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Muse checks every 15 minutes instead of every 2 hours | 14.7 | `muse`: change your cron (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Session status moved from check-in files to `session:<role>` labels on Issue #1 (no commits) | 3.4, 14.4, 14.8 | `groky`, `claude`, `muse`: use the labels (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Cheap check step 0: skip the 2-hour check while a session is running; clear sessions stale after 90 min | 14.8 | `groky`, `claude`, `muse`: add step 0 to your cheap check (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Sessions: Grok and Muse check every 2 hours on the hour, then 10-min work / 5-min break × up to 5; auditor every 6 hours, audits all waiting rounds; cheap check before reading anything | 13, 14.4, 14.7, 14.8 | `groky`, `claude`, `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
