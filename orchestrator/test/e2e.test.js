@@ -1,5 +1,5 @@
-// End-to-end simulation: real git (local bare remote), in-memory GitHub, scripted bots/auditor/Lou
-// following AGENTS.md runbooks. Runs topic 001's real seeds through to a finished topic.
+// End-to-end simulation of even-hour cycles: real git (local bare remote), in-memory GitHub, scripted bots,
+// auditor and Lou following AGENTS.md runbooks. Runs topic 001's real seeds until the topic is done.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -10,9 +10,10 @@ import { fileURLToPath } from 'node:url';
 import { Store, MockGitHub } from './mock-github.js';
 import { Git } from '../src/git.js';
 import { Orchestrator } from '../src/orchestrator.js';
-import { parseHeader, nodeRelDir, roundDir, titlePrefix, stripPrefix } from '../src/util.js';
-import { parseNode, parseOrder, sections } from '../src/formats.js';
+import { parseHeader, titlePrefix, stripPrefix } from '../src/util.js';
+import * as F from '../src/formats.js';
 import { standardLabels } from '../src/labels.js';
+import { cycleAt } from '../src/clock.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
@@ -21,9 +22,7 @@ const BOTS = ['muse', 'groky', 'claude'];
 
 function sh(cwd, args, author = 'test') {
   return execFileSync('git', args, {
-    cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
+    cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env, GIT_AUTHOR_NAME: author, GIT_AUTHOR_EMAIL: `${author}@x`, GIT_COMMITTER_NAME: author, GIT_COMMITTER_EMAIL: `${author}@x` },
   }).trim();
 }
@@ -34,37 +33,25 @@ function setup() {
   sh(tmp, ['init', '-q', '--bare', '-b', 'main', origin]);
   const seed = path.join(tmp, 'seed');
   sh(tmp, ['clone', '-q', origin, seed]);
-  for (const f of ['AGENTS.md', 'README.md', 'MASTER.md', 'TEMPLATE.md', 'topics', 'inbox', 'outbox', 'agents']) {
-    fs.cpSync(path.join(repoRoot, f), path.join(seed, f), { recursive: true });
-  }
+  for (const f of ['AGENTS.md', 'README.md', 'MASTER.md', 'TEMPLATE.md', 'topics']) fs.cpSync(path.join(repoRoot, f), path.join(seed, f), { recursive: true });
   sh(seed, ['checkout', '-q', '-b', 'main']);
   sh(seed, ['add', '-A']);
   sh(seed, ['commit', '-q', '-m', 'seed']);
   sh(seed, ['push', '-q', 'origin', 'main']);
-  const clone = (name) => {
-    const d = path.join(tmp, name);
-    sh(tmp, ['clone', '-q', origin, d]);
-    return d;
-  };
-  const orchDir = clone('orch');
-  const botDir = clone('bots');
-  const mergeDir = clone('merger');
-  const store = new Store({
-    onMerge: async (p) => {
-      sh(mergeDir, ['fetch', '-q', 'origin']);
-      sh(mergeDir, ['checkout', '-q', '-B', 'main', 'origin/main']);
-      sh(mergeDir, ['merge', '-q', '--no-ff', '-m', `merge ${p.head}`, `origin/${p.head}`], 'louisli');
-      sh(mergeDir, ['push', '-q', 'origin', 'main']);
-    },
-  });
+  const orchDir = path.join(tmp, 'orch');
+  const botDir = path.join(tmp, 'bots');
+  sh(tmp, ['clone', '-q', origin, orchDir]);
+  sh(tmp, ['clone', '-q', origin, botDir]);
+  const store = new Store();
+  store.clock = new Date('2026-10-24T04:05:00Z'); // 00:05 EDT
   for (const [n] of standardLabels()) store.labels.add(n);
-  return { tmp, origin, orchDir, botDir, store, mergeDir };
+  return { tmp, orchDir, botDir, store };
 }
 
 async function runOrch(env, cfg = {}) {
   const gh = new MockGitHub(env.store, 'github-actions[bot]');
   const git = new Git({ repoDir: env.orchDir, log: () => {} });
-  const orch = new Orchestrator({ gh, git, config: { ...baseConfig, start_rounds: true, ...cfg }, secret: 'test-secret', now: () => env.store.clock, log: () => {} });
+  const orch = new Orchestrator({ gh, git, config: { ...baseConfig, start_cycles: true, ...cfg }, now: () => env.store.clock, log: () => {} });
   try {
     return await orch.run();
   } finally {
@@ -72,319 +59,259 @@ async function runOrch(env, cfg = {}) {
   }
 }
 
-// ---------- simulated bots (AGENTS.md section 11) ----------
+const at = (env, minute) => {
+  const c = cycleAt(env.store.clock);
+  env.store.advance(minute - c.minute);
+};
+const nextCycle = (env) => env.store.advance(120 - cycleAt(env.store.clock).minute + 5);
 
-function topicDirIn(dir, nnn) {
+// ---------- simulated bots (AGENTS.md 11) ----------
+
+function topicDir(dir) {
   for (const st of ['active', 'done', 'parked', 'rejected']) {
     const p = path.join(dir, 'topics', st);
-    if (!fs.existsSync(p)) continue;
-    const d = fs.readdirSync(p).find((x) => x.startsWith(`${nnn}-`));
-    if (d) return `topics/${st}/${d}`;
+    const d = fs.existsSync(p) && fs.readdirSync(p).find((x) => x.startsWith('001-'));
+    if (d && fs.existsSync(path.join(dir, 'topics', st, d, 'README.md'))) return `topics/${st}/${d}`;
   }
   return null;
 }
 
 function checkout(env, branch) {
   sh(env.botDir, ['fetch', '-q', 'origin']);
-  sh(env.botDir, ['checkout', '-q', '-B', 'work', `origin/${branch}`]);
+  sh(env.botDir, ['checkout', '-q', '-B', 'w', `origin/${branch}`]);
   sh(env.botDir, ['clean', '-qfd']);
 }
 
-function pushWork(env, branch, files, msg, author) {
-  sh(env.botDir, ['add', ...files]);
+function push(env, branch, file, msg, author) {
+  sh(env.botDir, ['add', file]);
   sh(env.botDir, ['commit', '-q', '-m', msg], author);
   for (let i = 0; i < 4; i++) {
     try {
-      sh(env.botDir, ['push', '-q', 'origin', `HEAD:refs/heads/${branch}`], author);
-      return;
+      return sh(env.botDir, ['push', '-q', 'origin', `HEAD:refs/heads/${branch}`], author);
     } catch {
       sh(env.botDir, ['fetch', '-q', 'origin']);
       sh(env.botDir, ['rebase', '-q', `origin/${branch}`], author);
     }
   }
-  throw new Error('bot push failed');
+  throw new Error('push failed');
 }
 
-const canon = (s) => (s.startsWith('Do: ') ? s : `Do: ${s}`);
-
-function versionFor(scn, { bot, pos, node, round, id }) {
-  const lines = [`---`, `node: ${id}`, `bot: ${bot}`, `round: ${round}`, `position: ${pos}`, `---`, `## Summary`, `Node ${id}.`, ''];
-  for (const it of node.items) {
-    let statement = canon(it.fields.statement);
-    if (scn.disagree?.(id, round) && it.id === 'I1') statement = `Option from ${bot}`;
-    lines.push(`## ${it.id}`, 'action: keep', 'type: build', `statement: ${statement}`, `acceptance: ${id} ${it.id} is done`, ...(pos !== 'A' ? ['agrees_with: [A]', 'disagrees_with: []'] : []), '');
-  }
-  const split = scn.split?.(id, round);
-  if (split) {
-    const head = pos === 'A' ? 'NEW1' : 'A.NEW1';
-    lines.push(`## ${head}`, 'action: keep', 'type: build', `statement: Break ${id} into parts`, `split_into: [${split.join(', ')}]`, '');
-  }
-  const verdict = split ? 'split' : scn.revise?.(id, round) ? 'revise' : 'leaf';
-  lines.push('## Atomic', `verdict: ${verdict}`, ...(verdict === 'leaf' ? [] : ['failed_tests: [1]']), '');
-  return lines.join('\n');
+/**
+ * Votes by task title marker: "[ok]" yes·yes, "[no]" no·no, "[fix]" maybe until reworked once,
+ * "[stuck]" maybe forever (→ blocked after 2 reworks).
+ */
+function voteFor(t) {
+  const reworked = /\(reworked/.test(t.title);
+  if (/\[no\]/.test(t.title)) return { vote: 'no', reason: 'out of scope' };
+  if (/\[fix\]/.test(t.title) && !reworked) return { vote: 'maybe', reason: 'vague', changes: 'name the metric' };
+  if (/\[stuck\]/.test(t.title)) return { vote: 'maybe', reason: 'still vague', changes: 'be concrete' };
+  return { vote: 'yes', reason: 'clear' };
 }
 
-function parseBallot(text) {
-  const out = {};
-  for (const s of sections(text)) {
-    if (s.heading === 'Atomic') continue;
-    const t = {};
-    let L = null;
-    for (const line of s.lines) {
-      const h = /^###\s+([XYZ])$/.exec(line);
-      if (h) {
-        L = h[1];
-        t[L] = '';
-        continue;
-      }
-      if (L && /^(statement|dropped):/.test(line)) t[L] = line.replace(/^(statement|dropped):\s*/, '');
-      if (L && line.trim() === '(not addressed)') t[L] = null;
-    }
-    out[s.heading] = t;
-  }
-  return out;
-}
-
-async function botStep(env, scn, bot) {
-  const gh = new MockGitHub(env.store, 'earth616-bots');
-  const open = await gh.listIssues({ state: 'open' });
-  if (open.some((i) => i.labels.includes(`claimed:${bot}`))) return false;
-  const task =
-    open.find((i) => i.labels.includes(`vote:${bot}`) && !i.labels.includes('bot-error')) ??
-    open.find((i) => i.labels.includes(`turn:${bot}`) && !i.labels.includes('bot-error') && !i.labels.some((l) => l.startsWith('claimed:')));
-  if (!task) return false;
-  await gh.addLabels(task.number, [`claimed:${bot}`]);
-  const lock = await gh.createComment(task.number, `[${bot}] lock: ${bot} run sim heartbeat ${env.store.ts()}`);
-  const h = parseHeader(task.body);
-  checkout(env, h.branch);
-  const td = topicDirIn(env.botDir, h.topic);
-  const nodeDir = `${td}/${nodeRelDir(h.node)}`;
-  const node = parseNode(fs.readFileSync(path.join(env.botDir, nodeDir, 'node.md'), 'utf8'));
-  const rd = `${nodeDir}/rounds/${roundDir(node.fm.round)}`;
-  const author = `${bot}-bot`;
-  if (task.labels.includes(`vote:${bot}`)) {
-    const ballot = parseBallot(fs.readFileSync(path.join(env.botDir, rd, 'ballot', 'ballot.md'), 'utf8'));
-    const lines = [`---`, `node: ${h.node}`, `bot: ${bot}`, `round: ${node.fm.round}`, `---`];
-    for (const [id, ts] of Object.entries(ballot)) {
-      const own = Object.entries(ts).find(([, s]) => s && s.includes(`from ${bot}`));
-      const best = Object.entries(ts).filter(([, s]) => s !== null).sort((a, b) => a[1].localeCompare(b[1]) || a[0].localeCompare(b[0]))[0];
-      lines.push(`${id}: ${(own ?? best)?.[0] ?? 'none'} — consistent with the goal`);
-    }
-    const verdict = scn.split?.(h.node, node.fm.round) ? 'split' : scn.revise?.(h.node, node.fm.round) ? 'revise' : scn.disagree?.(h.node, node.fm.round) ? 'revise' : 'leaf';
-    lines.push(`atomic: ${verdict} — per the ballot`);
-    fs.writeFileSync(path.join(env.botDir, rd, `vote-${bot}.md`), lines.join('\n') + '\n');
-    pushWork(env, h.branch, [`${rd}/vote-${bot}.md`], `${h.topic}/${h.node} ${roundDir(node.fm.round)} ${bot} vote`, author);
-    await gh.removeLabel(task.number, `vote:${bot}`);
-  } else {
-    const order = parseOrder(fs.readFileSync(path.join(env.botDir, rd, 'order.md'), 'utf8')).order;
-    const pos = 'ABC'[order.indexOf(bot)];
-    fs.writeFileSync(path.join(env.botDir, rd, `research-${bot}.md`), `---\nnode: ${h.node}\nbot: ${bot}\nround: ${node.fm.round}\n---\nweb_access: no\n`);
-    fs.writeFileSync(path.join(env.botDir, rd, `version-${bot}.md`), versionFor(scn, { bot, pos, node, round: node.fm.round, id: h.node }));
-    pushWork(env, h.branch, [`${rd}/research-${bot}.md`, `${rd}/version-${bot}.md`], `${h.topic}/${h.node} ${roundDir(node.fm.round)} ${bot} version`, author);
-    await gh.removeLabel(task.number, `turn:${bot}`);
-    if (pos === 'C') {
-      await gh.removeLabel(task.number, 'state:turn');
-      await gh.addLabels(task.number, ['state:ballot']);
-    } else await gh.addLabels(task.number, [`turn:${order['ABC'.indexOf(pos) + 1]}`]);
-  }
-  await gh.deleteComment(lock.id);
-  await gh.removeLabel(task.number, `claimed:${bot}`);
-  await gh.createComment(task.number, `[${bot}] ${roundDir(node.fm.round)} ${bot} committed`);
-  return true;
-}
-
-async function auditorStep(env, scn) {
-  const gh = new MockGitHub(env.store, 'earth616-bots');
-  const open = await gh.listIssues({ state: 'open' });
-  const task = open.find((i) => i.labels.includes('state:audit'));
-  if (!task) return false;
-  const h = parseHeader(task.body);
-  checkout(env, h.branch);
-  const td = topicDirIn(env.botDir, h.topic);
-  const nodeDir = `${td}/${nodeRelDir(h.node)}`;
-  const node = parseNode(fs.readFileSync(path.join(env.botDir, nodeDir, 'node.md'), 'utf8'));
-  const rd = `${nodeDir}/rounds/${roundDir(node.fm.round)}`;
-  const voidIt = scn.voidAudit?.(h.node, node.fm.round);
-  fs.writeFileSync(path.join(env.botDir, rd, 'audit.md'), `result: ${voidIt ? 'void' : 'pass'}\nfailed: [${voidIt ? '5' : ''}]\nevidence: sim\nescalate: []\n`);
-  pushWork(env, h.branch, [`${rd}/audit.md`], `${h.topic}/${h.node} audit`, 'auditor-bot');
-  await gh.removeLabel(task.number, 'state:audit');
-  await gh.addLabels(task.number, ['state:audited']);
-  return true;
-}
-
-async function louStep(env, scn) {
-  const gh = new MockGitHub(env.store, 'louisli');
-  const open = await gh.listIssues({ state: 'open' });
-  let acted = false;
-  for (const i of open) {
-    const p = titlePrefix(i.title);
-    if (p?.kind !== 'need-lou') continue;
-    const cmd = scn.lou(i);
-    if (cmd === 'merge') {
-      await gh.mergePull(i.number);
-      acted = true;
-      continue;
-    }
-    if (!cmd) continue;
-    await gh.createComment(i.number, cmd);
-    await gh.updateIssue(i.number, { title: `[updated-lou #${p.n}] ${stripPrefix(i.title)}` });
-    acted = true;
-  }
-  return acted;
-}
-
-async function simulate(env, scn, { maxCycles = 120 } = {}) {
-  const log = [];
-  for (let c = 0; c < maxCycles; c++) {
-    log.push(...(await runOrch(env)));
-    let busy = false;
-    for (const b of BOTS) busy = (await botStep(env, scn, b)) || busy;
-    busy = (await auditorStep(env, scn)) || busy;
-    busy = (await louStep(env, scn)) || busy;
-    env.store.advance(5);
-    sh(env.mergeDir, ['fetch', '-q', 'origin']);
-    if (sh(env.mergeDir, ['ls-tree', '--name-only', 'origin/main', 'topics/done/']).includes('001-')) {
-      log.push(...(await runOrch(env)));
-      return { log, cycles: c + 1 };
-    }
-  }
-  return { log, cycles: maxCycles };
-}
-
-const show = (env, ref, p) => sh(env.mergeDir, ['show', `${ref}:${p}`]);
-
-test('end to end: topic 001 runs from seeds to done', { timeout: 600000 }, async () => {
-  const env = setup();
-  const scn = {
-    split: (id, r) => (id === '03' && r === 1 ? ['Tracks', 'Entrants'] : null),
-    disagree: (id, r) => id === '01' && r === 1,
-    voidAudit: (id, r) => id === '03.2' && r === 1,
-    lou: (issue) => {
+async function botsWork(env, { skip = [] } = {}) {
+  const gh = new MockGitHub(env.store, 'thelouis7789');
+  for (const bot of BOTS) {
+    if (skip.includes(bot)) continue;
+    for (const issue of await gh.listIssues({ state: 'open', labels: `todo:${bot}` })) {
       const h = parseHeader(issue.body);
-      if (issue.isPull) return /bundle 01:/.test(issue.title) ? '/reject 01 not now' : 'merge';
-      if (h?.node === '01') return '/pick X';
-      return '/rerun 2';
-    },
-  };
-  const { log, cycles } = await simulate(env, scn);
-  const errors = log.filter((l) => /failed|error/i.test(l));
-  assert.deepEqual(errors, [], `orchestrator reported errors:\n${errors.join('\n')}`);
-
-  // topic finished and moved
-  const doneTree = sh(env.mergeDir, ['ls-tree', '-r', '--name-only', 'origin/main', 'topics/done/']);
-  assert.ok(doneTree.includes('001-2026-09-prompt-optimizer-arena/README.md'), `topic not done after ${cycles} cycles`);
-
-  const s = env.store;
-  const nodes = s.issues.filter((i) => i.labels.includes('kind:node'));
-  const byNode = Object.fromEntries(nodes.map((i) => [parseHeader(i.body).node, i]));
-  // 8 seeds + 2 children of 03
-  assert.equal(nodes.length, 10);
-  assert.deepEqual(Object.keys(byNode).sort(), ['01', '02', '03', '03.1', '03.2', '04', '05', '06', '07', '08']);
-  assert.ok(s.subIssues.some((x) => x.parent === byNode['03'].number && x.childId === byNode['03.1'].id), '03.1 is a sub-issue of 03');
-
-  // 01: escalated on a 3-way split, Lou picked X, then leaf, then bundle rejected
-  const c01 = s.comments.filter((c) => c.n === byNode['01'].number).map((c) => c.body);
-  assert.ok(c01.some((b) => b.includes('<!-- need-lou #1') && b.includes('votes split')), '01 escalated');
-  assert.ok(c01.some((b) => b.startsWith('Done: `/pick X`')), '01 /pick X applied');
-  assert.equal(byNode['01'].state, 'closed');
-  assert.equal(byNode['01'].state_reason, 'not_planned');
-  assert.ok(byNode['01'].labels.includes('state:rejected'));
-
-  // 03.2: one void round, then leaf → approved
-  const c032 = s.comments.filter((c) => c.n === byNode['03.2'].number).map((c) => c.body);
-  assert.ok(c032.some((b) => /^r01 void: audit failed/.test(b)), '03.2 r01 void');
-  assert.ok(c032.some((b) => b.startsWith('r02 started')), '03.2 ran r02');
-  for (const id of ['03.1', '03.2', '04', '05', '06', '07', '02', '08']) {
-    assert.ok(byNode[id].labels.includes('state:approved'), `${id} approved (labels: ${byNode[id].labels})`);
-    assert.equal(byNode[id].state, 'closed');
+      checkout(env, h.branch);
+      const td = topicDir(env.botDir);
+      const cdir = `${td}/items/${h.item}/cycles/${h.cycle}`;
+      const a = F.parseAssignments(fs.readFileSync(path.join(env.botDir, cdir, 'assignments.md'), 'utf8'));
+      const c = cycleAt(env.store.clock);
+      if (c.minute < 25) {
+        for (const w of a.work.filter((w) => w.bot === bot)) {
+          let file, text;
+          if (w.what === 'breakdown') {
+            file = `${cdir}/breakdown-${bot}.md`;
+            const marks = ['[ok]', '[fix]', '[no]', h.item === '03' ? '[stuck]' : '[ok]'];
+            text = `---\ntopic: "001"\nitem: "${h.item}"\nbot: ${bot}\ncycle: ${h.cycle}\n---\n## Summary\nBy ${bot}.\n\n${marks.map((m, k) => `## ${k + 1}\ntitle: ${h.item} task ${k + 1} ${m}\ndescription: Do part ${k + 1} of item ${h.item}.\ndone_when: part ${k + 1} exists\n`).join('\n')}`;
+          } else {
+            file = `${cdir}/rework-${w.task}-${bot}.md`;
+            const t = F.parseTask(fs.readFileSync(path.join(env.botDir, `${td}/items/${h.item}/tasks/${w.task}/task.md`), 'utf8'));
+            const base = t.title.replace(/ \(reworked.*$/, '');
+            text = `---\ntopic: "001"\nitem: "${h.item}"\ntask: ${w.task}\nbot: ${bot}\ncycle: ${h.cycle}\nrework: ${t.reworks}\n---\ntitle: ${base} (reworked ${t.reworks})\ndescription: ${t.description} Now concrete.\ndone_when: ${t.done_when}\nresponse:\n- named the metric\n`;
+          }
+          fs.mkdirSync(path.dirname(path.join(env.botDir, file)), { recursive: true });
+          fs.writeFileSync(path.join(env.botDir, file), text);
+          push(env, h.branch, file, `[${bot}] ${h.cycle} ${w.what}`, `${bot}-bot`);
+        }
+      } else if (c.minute >= 30 && c.minute < 45) {
+        const sheetPath = path.join(env.botDir, cdir, `review-sheet-${bot}.md`);
+        if (!fs.existsSync(sheetPath)) continue;
+        const sheet = F.parseSheet(fs.readFileSync(sheetPath, 'utf8'));
+        const body = Object.entries(sheet).map(([id, t]) => {
+          const v = voteFor(t);
+          return `## ${id}\nvote: ${v.vote}\nreason: ${v.reason}\n${v.changes ? `changes: ${v.changes}\n` : ''}`;
+        });
+        const file = `${cdir}/review-${bot}.md`;
+        fs.writeFileSync(path.join(env.botDir, file), `---\ntopic: "001"\nitem: "${h.item}"\nbot: ${bot}\ncycle: ${h.cycle}\n---\n${body.join('\n')}`);
+        push(env, h.branch, file, `[${bot}] ${h.cycle} review`, `${bot}-bot`);
+      }
+      await gh.removeLabel(issue.number, `todo:${bot}`);
+    }
   }
-  assert.ok(byNode['03'].labels.includes('state:split'));
+}
 
-  // bundles: 03 bundle contains both children; outbox written; rejected 01 bundle closed unmerged
-  const prs = s.pulls.map((p) => ({ ...p, title: s.issues.find((i) => i.number === p.number).title }));
-  const b03 = prs.find((p) => p.head === 'bundle/001/03');
-  assert.ok(b03?.merged, 'bundle 03 merged');
-  assert.ok(prs.find((p) => p.head === 'bundle/001/01' && !p.merged && p.state === 'closed'), 'bundle 01 closed unmerged');
-  const outbox = sh(env.mergeDir, ['ls-tree', '--name-only', 'origin/main', 'outbox/']);
-  assert.match(outbox, /outbox\/2026-10-2\d-001-03\.md/);
-  const plan = show(env, 'origin/main', outbox.split('\n').find((f) => /-001-03\.md$/.test(f)));
-  assert.match(plan, /### 03\.1 Tracks/);
-  assert.match(plan, /### 03\.2 Entrants/);
-  assert.match(plan, /Acceptance: 03\.1 I1 is done/);
-  assert.ok(!outbox.includes('-001-01.md'), 'no plan for the rejected bundle');
+/** Auditor (AGENTS.md 13): exports approved, rejects blocked. */
+async function audit(env) {
+  const gh = new MockGitHub(env.store, 'thelouis7789');
+  const open = await gh.listIssues({ state: 'open', labels: 'kind:task' });
+  let n = 0;
+  for (const t of open) {
+    if (t.labels.includes('state:approved')) {
+      await gh.removeLabel(t.number, 'state:approved');
+      await gh.addLabels(t.number, ['state:exported']);
+      await gh.createComment(t.number, '[auditor] exported to v-ideas');
+      await gh.updateIssue(t.number, { state: 'closed', state_reason: 'completed' });
+      n++;
+    } else if (t.labels.includes('state:blocked')) {
+      await gh.removeLabel(t.number, 'state:blocked');
+      await gh.addLabels(t.number, ['state:needs-lou']);
+      await gh.createComment(t.number, '[auditor] needs Lou: still vague after 2 reworks');
+    }
+  }
+  return n;
+}
 
-  // overrides logged, master list generated, ballot blind (key only after voting)
-  const ov = show(env, 'origin/main', 'topics/done/001-2026-09-prompt-optimizer-arena/overrides.md');
-  assert.match(ov, /\| 01 \| \/pick X \|/);
-  assert.match(ov, /bundle #\d+ \| \/reject 01 not now/);
-  const master = show(env, 'origin/main', 'MASTER.md');
-  assert.match(master, /\| 001 \| .* \| done \|/);
-  const keyLog = sh(env.mergeDir, ['log', '--format=%s', 'origin/loop/001/03', '--', 'topics/active/001-2026-09-prompt-optimizer-arena/nodes/03/rounds/r01/ballot/key.md']);
-  const voteLog = sh(env.mergeDir, ['log', '--format=%s', 'origin/loop/001/03', '--', 'topics/active/001-2026-09-prompt-optimizer-arena/nodes/03/rounds/r01/vote-muse.md']);
-  assert.ok(keyLog && voteLog, 'key and votes exist');
-  const keyTime = Number(sh(env.mergeDir, ['log', '-1', '--format=%ct', 'origin/loop/001/03', '--', 'topics/active/001-2026-09-prompt-optimizer-arena/nodes/03/rounds/r01/ballot/key.md']));
-  const voteTime = Number(sh(env.mergeDir, ['log', '-1', '--format=%ct', 'origin/loop/001/03', '--', 'topics/active/001-2026-09-prompt-optimizer-arena/nodes/03/rounds/r01/vote-muse.md']));
-  assert.ok(keyTime >= voteTime, 'key written after votes');
+/** Lou answers every need-lou task with /reword. */
+async function lou(env) {
+  const gh = new MockGitHub(env.store, 'louisli');
+  for (const t of await gh.listIssues({ state: 'open' })) {
+    const p = titlePrefix(t.title);
+    if (p?.kind !== 'need-lou') continue;
+    await gh.createComment(t.number, '/reword Measure accuracy on the 50-prompt set.');
+    await gh.updateIssue(t.number, { title: `[updated-lou #${p.n}] ${stripPrefix(t.title)}` });
+  }
+}
 
-  // the orchestrator only ever commits as orchestrator-bot, bots only touch their own files
-  const authors = sh(env.mergeDir, ['log', '--all', '--format=%an %s']).split('\n');
-  for (const line of authors.filter((l) => l.startsWith('muse-bot'))) assert.match(line, /muse (version|vote)$/);
-  assert.ok(authors.some((l) => l.startsWith('orchestrator-bot')));
+async function cycle(env, opts = {}) {
+  at(env, 5);
+  await runOrch(env);
+  at(env, 10);
+  await botsWork(env, opts);
+  at(env, 26);
+  await runOrch(env);
+  at(env, 31);
+  await botsWork(env, opts);
+  at(env, 46);
+  await runOrch(env);
+  nextCycle(env);
+}
 
-  // dependency order: 05 started only after 03 was done
-  const startOf = (id) => s.comments.find((c) => c.n === byNode[id].number && c.body.startsWith('r01 started'))?.created_at;
-  const splitAt = s.comments.find((c) => c.n === byNode['03'].number && /split into/.test(c.body))?.created_at;
-  assert.ok(startOf('05') > splitAt, '05 waited for 03');
-  console.log(`simulation finished in ${cycles} cycles; ${s.issues.length} issues/PRs; ${s.comments.length} comments`);
+test('topic 001 runs through even-hour cycles to done', async () => {
+  const env = setup();
+  const s = env.store;
+  let cycles = 0;
+  let exported = 0;
+  const authors = new Map();
+  while (cycles < 40) {
+    await cycle(env);
+    cycles++;
+    for (const i of s.issues.filter((i) => i.labels.includes('kind:item'))) {
+      const h = parseHeader(i.body);
+      if (h.author && h.new_in && !authors.has(h.item)) authors.set(h.item, h.author);
+    }
+    if (cycles % 3 === 0) {
+      exported += await audit(env);
+      await lou(env);
+    }
+    if (s.issues.some((i) => i.labels.includes('kind:topic') && i.state === 'closed')) break;
+  }
+  const items = s.issues.filter((i) => i.labels.includes('kind:item'));
+  const tasks = s.issues.filter((i) => i.labels.includes('kind:task'));
+  assert.equal(items.length, 8, 'one item Issue per seed');
+  assert.ok(items.every((i) => i.labels.includes('state:done')), 'every item done');
+  assert.ok(s.issues.find((i) => i.labels.includes('kind:topic')).labels.includes('topic-state:done'), 'topic done');
+  // one bot per item, and all three bots got items
+  assert.equal(authors.size, 8);
+  assert.deepEqual(new Set(authors.values()), new Set(BOTS));
+  // [no] tasks rejected on first review get no Issue; every other task does
+  assert.equal(tasks.length, 8 * 3);
+  assert.ok(tasks.every((t) => t.state === 'closed' && t.labels.includes('state:exported')), 'all exported');
+  assert.ok(exported >= 20);
+  // 03's [stuck] task went blocked → Lou → reworded and approved
+  const stuck = tasks.find((t) => /^\[001\] 03-T\d+ 03 task 4/.test(t.title));
+  assert.ok(stuck.labels.includes('lou-approved'));
+  // a [fix] task was reworked once, then approved
+  await runOrch(env); // items/ follow the topic folder to done/
+  checkout(env, 'work/001');
+  const td = topicDir(env.botDir);
+  assert.equal(td, 'topics/done/001-2026-09-prompt-optimizer-arena');
+  assert.ok(!fs.existsSync(path.join(env.botDir, 'topics/active/001-2026-09-prompt-optimizer-arena')), 'nothing left behind in active/');
+  const fix = F.parseTask(fs.readFileSync(path.join(env.botDir, `${td}/items/05/tasks/T2/task.md`), 'utf8'));
+  assert.equal(fix.reworks, 1);
+  assert.match(fix.title, /reworked 1/);
+  assert.equal(fix.changes.length, 2);
+  // overrides logged, MASTER updated
+  sh(env.botDir, ['checkout', '-q', '-B', 'm', 'origin/main']);
+  assert.match(fs.readFileSync(path.join(env.botDir, 'topics/done/001-2026-09-prompt-optimizer-arena/overrides.md'), 'utf8'), /\/reword/);
+  assert.match(fs.readFileSync(path.join(env.botDir, 'MASTER.md'), 'utf8'), /\| 03 \|.*\| done \|/);
+  assert.ok(cycles < 20, `finished in ${cycles} cycles`);
 });
 
-test('health: dead locks, bot errors and absent bots', { timeout: 120000 }, async () => {
+test('first cycle: three items, one bot each, dependencies respected', async () => {
   const env = setup();
-  const s = env.store;
-  await runOrch(env); // creates issues and starts 03 and 01
-  const gh = new MockGitHub(s, 'earth616-bots');
-  const n03 = s.issues.find((i) => parseHeader(i.body)?.node === '03');
-  const n01 = s.issues.find((i) => parseHeader(i.body)?.node === '01');
-  assert.ok(n03.labels.includes('turn:muse'), `03 starts with muse (labels: ${n03.labels})`);
-  assert.ok(n01.labels.includes('turn:groky'), '01 starts with groky (A spread across nodes)');
-
-  // dead lock: label + stale heartbeat
-  await gh.addLabels(n03.number, ['claimed:muse']);
-  await gh.createComment(n03.number, `[muse] lock: muse run x heartbeat ${s.ts()}`);
-  s.advance(31);
-  // bot error on 03 (a different role than the dead lock)
-  await gh.addLabels(n03.number, ['bot-error']);
-  await gh.createComment(n03.number, '[claude] error: claude could not parse header');
+  at(env, 5);
   await runOrch(env);
-  assert.ok(!n03.labels.includes('claimed:muse'), 'dead lock released');
-  assert.ok(n03.labels.includes('turn:muse'), 'task label kept');
-  assert.ok(s.comments.some((c) => c.n === n03.number && c.body === 'lock released: muse no heartbeat for 30m'));
-  assert.ok(!n03.labels.includes('bot-error'), 'bot-error cleared');
-  sh(env.mergeDir, ['fetch', '-q', 'origin']);
-  const node03 = parseNode(show(env, 'origin/loop/001/03', 'topics/active/001-2026-09-prompt-optimizer-arena/nodes/03/node.md'));
-  assert.equal(node03.fm.dead_locks.muse, 1);
-  assert.equal(node03.fm.bot_errors.claude, 1);
+  const working = env.store.issues.filter((i) => i.labels.includes('state:working')).map((i) => parseHeader(i.body));
+  // priority order 03(1) → 05(2, needs 03) ... only items without pending deps: 03, 01, 02? 02 needs 01.
+  assert.deepEqual(working.map((h) => h.item).sort(), ['01', '03']);
+  assert.equal(new Set(working.map((h) => h.author)).size, 2);
+  for (const i of env.store.issues.filter((i) => i.labels.includes('state:working'))) {
+    const h = parseHeader(i.body);
+    assert.deepEqual(i.labels.filter((l) => l.startsWith('todo:')), [`todo:${h.author}`]);
+  }
+});
 
-  // absent bot: nobody touches 01 for 6+ hours (groky never takes its turn)
-  s.advance(6 * 60 + 5);
-  await runOrch(env);
-  assert.ok(n01.labels.includes('state:needs-lou'), `01 escalated (labels: ${n01.labels})`);
-  assert.match(n01.title, /^\[need-lou #1\]/);
-  assert.ok(!n01.labels.some((l) => l.startsWith('turn:')), 'task labels cleared on escalation');
-  // 03 was released by a dead lock, which counts as the bot having tried, so it stays in turn
-  assert.ok(n03.labels.includes('state:turn'));
+test('missed work and review are noted; missing rework reverts', async () => {
+  const env = setup();
+  await cycle(env, { skip: ['groky'] });
+  const status = env.store.issues.find((i) => i.labels.includes('kind:status'));
+  assert.ok(status, 'status Issue created');
+  const notes = env.store.comments.filter((c) => c.n === status.number).map((c) => c.body).join('\n');
+  assert.match(notes, /missed|nothing to review|missing/);
+  // an item whose author skipped is back in todo
+  const back = env.store.issues.filter((i) => i.labels.includes('kind:item') && i.labels.includes('state:todo'));
+  assert.ok(back.length >= 1);
+});
 
-  // Lou removes the prefix without a command → restored
-  await new MockGitHub(s, 'louisli').updateIssue(n01.number, { title: stripPrefix(n01.title) });
+test('orchestrator down for a whole cycle: the cycle is dropped and the item goes back to todo', async () => {
+  const env = setup();
+  at(env, 5);
+  await runOrch(env); // assigns
+  at(env, 10);
+  await botsWork(env);
+  nextCycle(env); // no sheets, no tally
+  at(env, 6);
   await runOrch(env);
-  assert.match(n01.title, /^\[need-lou #1\]/);
+  const status = env.store.issues.find((i) => i.labels.includes('kind:status'));
+  assert.match(env.store.comments.filter((c) => c.n === status.number).map((c) => c.body).join('\n'), /dropped/);
+  // and the new cycle reassigned work
+  assert.ok(env.store.issues.some((i) => i.labels.includes('state:working')));
+});
 
-  // a bot (not Lou) posting a command is ignored, and so is a tagged comment from a bot running as louisli
-  await gh.createComment(n01.number, '/reject');
-  await new MockGitHub(s, 'louisli').createComment(n01.number, '[claude] /reject this is a bot quoting a command');
-  await new MockGitHub(s, 'louisli').updateIssue(n01.number, { title: `[updated-lou #1] ${stripPrefix(n01.title)}` });
+test('Lou parks and resumes an item; start_cycles false assigns nothing', async () => {
+  const env = setup();
+  at(env, 5);
+  await runOrch(env, { start_cycles: false });
+  assert.equal(env.store.issues.filter((i) => i.labels.includes('state:working')).length, 0);
+  const item = env.store.issues.find((i) => i.labels.includes('kind:item') && parseHeader(i.body).item === '03');
+  const lou = new MockGitHub(env.store, 'louisli');
+  await lou.createComment(item.number, '/park');
+  await lou.updateIssue(item.number, { title: `[updated-lou] ${item.title}` });
   await runOrch(env);
-  assert.equal(n01.state, 'open', 'bot command ignored');
-  assert.match(n01.title, /^\[need-lou #1\]/);
-  assert.ok(s.comments.some((c) => c.n === n01.number && c.body.startsWith('I found `[updated-lou]` but no new command')));
+  assert.ok(item.labels.includes('state:parked'));
+  assert.equal(titlePrefix(item.title), null);
+  assert.ok(!env.store.issues.some((i) => i.labels.includes('state:working') && parseHeader(i.body).item === '03'));
+  // a bot comment that looks like a command is ignored
+  const bot = new MockGitHub(env.store, 'louisli');
+  await bot.createComment(item.number, '[muse] /resume');
+  await lou.updateIssue(item.number, { title: `[updated-lou] ${item.title}` });
+  await runOrch(env);
+  assert.ok(item.labels.includes('state:parked'));
+  await lou.createComment(item.number, '/resume');
+  await lou.updateIssue(item.number, { title: `[updated-lou] ${stripPrefix(item.title)}` });
+  await runOrch(env);
+  assert.ok(item.labels.includes('state:todo') || item.labels.includes('state:working'));
 });

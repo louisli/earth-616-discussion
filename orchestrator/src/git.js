@@ -146,6 +146,16 @@ export class Worktree {
       this.git.log(`[dry-run] push ${this.branch}: ${message}`);
       return this.head();
     }
+    return this.push();
+  }
+  /** Is origin/main already contained in this branch? */
+  hasMain() {
+    this.git.run(['fetch', 'origin', '+refs/heads/main:refs/remotes/origin/main'], this.git.repoDir);
+    return this.run(['merge-base', '--is-ancestor', 'origin/main', 'HEAD'], { allowFail: true }) !== null;
+  }
+  /** Push HEAD, rebasing on conflict. */
+  push() {
+    if (this.git.dryRun) return this.head();
     for (let attempt = 0; attempt < 4; attempt++) {
       const ok = this.run(['push', ...(this.force ? ['--force'] : []), 'origin', `HEAD:refs/heads/${this.branch}`], { allowFail: true });
       if (ok !== null) {

@@ -2,6 +2,8 @@
 
 **Goal:** decide what to build for a public prompt-optimizer benchmark and the enterprise "antivirus for AI prompts" product it feeds, down to buildable tasks.
 
+**Target:** `projectll/j-benchmark-testing-ai-models`, folder `z-my/z-my-github-issues/v-ideas/` (approved ideas are exported there by the auditor, AGENTS.md 10.2).
+
 Two linked ideas:
 
 1. **Prompt Optimizer Arena.** A public, open benchmark that runs the same raw prompts through different optimizers: a house method, commercial "improve my prompt" tools, and open-source optimizers. All are scored on one fixed target model, eval set and judge. It includes a public leaderboard and blind human voting.

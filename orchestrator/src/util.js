@@ -35,8 +35,8 @@ export function parseHeader(body) {
   }
 }
 
-const HEADER_KEYS = ['topic', 'node', 'branch', 'path', 'round', 'attempt', 'round_limit', 'order',
-  'lou_cycles', 'priority', 'depends_on', 'tally_sha', 'escalation'];
+const HEADER_KEYS = ['topic', 'item', 'task', 'branch', 'cycle', 'phase', 'priority', 'depends_on', 'author',
+  'reworks', 'lou_cycles'];
 
 export function renderHeader(h) {
   const lines = [];

@@ -1,4 +1,4 @@
-// Entry point: node src/main.js  (env: GITHUB_TOKEN, GITHUB_REPOSITORY, ORCH_SECRET, DRY_RUN, REPO_DIR)
+// Entry point: node src/main.js  (env: GITHUB_TOKEN, GITHUB_REPOSITORY, DRY_RUN, REPO_DIR)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,15 +14,11 @@ const repoDir = process.env.REPO_DIR || path.resolve(here, '..', '..');
 
 const gh = new GitHub({ token: process.env.GITHUB_TOKEN || process.env.GH_TOKEN, repo, dryRun });
 const git = new Git({ repoDir, dryRun });
-const orch = new Orchestrator({ gh, git, config, secret: process.env.ORCH_SECRET || '' });
+const orch = new Orchestrator({ gh, git, config, secret: '' });
 
 try {
-  if (!process.env.ORCH_SECRET) console.log('warning: ORCH_SECRET is not set — ballots cannot be built until it is.');
-  if (process.env.GITHUB_ACTIONS) {
-    console.log(process.env.ORCH_SECRET ? '::notice title=orchestrator::ORCH_SECRET is set' : '::warning title=orchestrator::ORCH_SECRET is not set');
-    console.log(`::notice title=orchestrator::start_rounds is ${config.start_rounds}; dry run: ${dryRun}`);
-  }
-  if (!config.start_rounds) console.log('start_rounds is false in orchestrator/config.json — no new rounds will start.');
+  if (process.env.GITHUB_ACTIONS) console.log(`::notice title=orchestrator::start_cycles is ${config.start_cycles}; dry run: ${dryRun}`);
+  if (!config.start_cycles) console.log('start_cycles is false in orchestrator/config.json — no new items will be assigned.');
   const summary = await orch.run();
   const text = `## Orchestrator run${dryRun ? ' (dry run)' : ''}\n\n${summary.length ? summary.map((s) => `- ${s}`).join('\n') : '- nothing to do'}\n\nAPI calls: ${gh.calls}\n`;
   console.log(text);

@@ -1,12 +1,6 @@
 {
-  "start_rounds": false,
-  "max_active_nodes": 3,
-  "default_round_limit": 6,
+  "start_cycles": false,
   "lock_timeout_minutes": 30,
-  "absent_bot_hours": 6,
-  "max_depth": 4,
-  "max_topic_nodes": 50,
-  "max_bundle_leaves": 10,
   "lou_login": "louisli",
   "orchestrator_login": "github-actions[bot]"
 }
