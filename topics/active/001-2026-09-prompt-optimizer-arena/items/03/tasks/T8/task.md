@@ -3,7 +3,7 @@ topic: "001"
 item: "03"
 task: T8
 author: muse
-state: rework
+state: approved
 reworks: 1
 first_cycle: 2026-10-24-06
 issue: 18
@@ -25,3 +25,4 @@ done_when: Exactly three categories are chosen, and a mapping table states for e
 - 2026-10-24-06: proposed by muse; groky maybe, claude maybe → more-review
 - 2026-10-24-08: rework 1 assigned to muse
 - 2026-10-24-08: reworked by muse — - groky proposal comment (T3/T10/T11 share one leaderboard spec, scoring stays with item 05): done — noted; this rework changes only the category reconciliation rule. - claude proposal comment (house placeholder rule and per-track eligibility gaps in T5): not done for T8 — that gap belongs to T5 and
+- 2026-10-24-08: rework 1 reviewed; groky yes, claude yes → approved

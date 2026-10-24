@@ -3,7 +3,7 @@ topic: "001"
 item: "03"
 task: T11
 author: muse
-state: rework
+state: approved
 reworks: 1
 first_cycle: 2026-10-24-06
 issue: 21
@@ -24,3 +24,4 @@ done_when: The T10 leaderboard specification requires model labelling and per-ca
 - 2026-10-24-06: proposed by muse; groky yes, claude maybe → more-review
 - 2026-10-24-08: rework 1 assigned to muse
 - 2026-10-24-08: reworked by muse — - groky proposal comment (T3, T10 and T11 all write rules into the same leaderboard specification, so the planner should treat T10 as the spec and T11 as requirements it must satisfy; scoring and judging stay with item 05): done — the description now frames T11 explicitly as a requirement on the T10
+- 2026-10-24-08: rework 1 reviewed; groky yes, claude yes → approved

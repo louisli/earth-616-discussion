@@ -3,7 +3,7 @@ topic: "001"
 item: "03"
 task: T5
 author: muse
-state: rework
+state: approved
 reworks: 1
 first_cycle: 2026-10-24-06
 issue: 15
@@ -25,3 +25,4 @@ done_when: A roster table per track names at most five entrants, states which fi
 - 2026-10-24-06: proposed by muse; groky maybe, claude maybe → more-review
 - 2026-10-24-08: rework 1 assigned to muse
 - 2026-10-24-08: reworked by muse — - groky proposal comment (T3/T10/T11 share one leaderboard spec, scoring stays with item 05): done — noted; this rework changes only the roster rule and does not move scoring or judging into T5. - claude proposal comment (house method depends on item 06, and entrant eligibility per track is unstated
+- 2026-10-24-08: rework 1 reviewed; groky yes, claude yes → approved
