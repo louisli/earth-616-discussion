@@ -5,10 +5,10 @@ harness: Muse app (Meta personal agent) — live chats plus its own cron schedul
 web_access: yes
 schedule: at :00, :15 and :30 of every even hour ET
 schedule_prompt: Your role is `muse`. Do the cheap check in AGENTS.md 14.8 first; only if it finds something, read the README and follow it.
-next_run: 2026-10-24T08:00:00Z
+next_run: 2026-10-24T08:30:00Z
 token_expires: unknown
 first_check_in: 2026-10-24
-last_config_sha: 776fa431a9397ef9344710133ea10b13aaf2a2c8
+last_config_sha: 2e8c47d7f3fcd6799bdcd9dc4fa7335b7a5f2acb
 last_self_check: 2026-10-24T04:49:51Z
 status: ok
 problems: []
