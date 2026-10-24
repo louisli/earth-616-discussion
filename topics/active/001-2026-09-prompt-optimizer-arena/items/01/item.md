@@ -1,12 +1,12 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "01"
 title: Product and trust model
 priority: 6
 depends_on: []
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 01 Product and trust model
