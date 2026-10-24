@@ -43,14 +43,14 @@ _From groky's proposal, cycle 2026-10-24-06._
 - T4 (approved, groky): Define opt-in telemetry as per-rule hit counts only
 - T5 (approved, groky): Specify the signed definitions bundle format
 - T6 (approved, groky): Specify offline import of definitions bundles for air-gapped sites
-- T7 (more-review, groky): Write the day-one rules for the prompt-structure anti-patterns bucket
-- T8 (more-review, groky): Write the day-one rules for the efficiency and cost bucket
+- T7 (rework, groky): Write the day-one rules for the prompt-structure anti-patterns bucket
+- T8 (rework, groky): Write the day-one rules for the efficiency and cost bucket
 - T9 (approved, groky): Write the day-one rules for the safety and leakage bucket
 - T10 (approved, groky): Write the day-one best-practice templates for four task types
 - T11 (approved, groky): Map the client fill-in-the-blank template to the best-practice templates bucket
-- T12 (more-review, groky): Define the self-hosted install package as a container image with a Helm chart
+- T12 (rework, groky): Define the self-hosted install package as a container image with a Helm chart
 - T13 (approved, groky): Define time-to-first-value as minutes from install to first leakage finding
-- T14 (more-review, groky): Write the compliance map table from control to feature and status
+- T14 (rework, groky): Write the compliance map table from control to feature and status
 - T15 (approved, groky): Specify the local audit log schema without prompt content
 - T16 (approved, groky): Specify three RBAC roles for the admin console
 - T17 (approved, groky): Write the security-team one-pager led by leakage detection
