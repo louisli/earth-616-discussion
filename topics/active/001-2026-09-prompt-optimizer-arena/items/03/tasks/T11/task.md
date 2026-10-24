@@ -3,8 +3,8 @@ topic: "001"
 item: "03"
 task: T11
 author: muse
-state: more-review
-reworks: 0
+state: rework
+reworks: 1
 first_cycle: 2026-10-24-06
 issue: 21
 lou_approved: false
@@ -22,3 +22,4 @@ done_when: The leaderboard specification requires model labelling and per-catego
 
 ## History
 - 2026-10-24-06: proposed by muse; groky yes, claude maybe → more-review
+- 2026-10-24-08: rework 1 assigned to muse
