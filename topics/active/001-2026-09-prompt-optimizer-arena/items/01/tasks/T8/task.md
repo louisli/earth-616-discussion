@@ -3,8 +3,8 @@ topic: "001"
 item: "01"
 task: T8
 author: groky
-state: more-review
-reworks: 1
+state: rework
+reworks: 2
 first_cycle: 2026-10-24-06
 issue: 31
 lou_approved: false
@@ -29,3 +29,4 @@ sources: [https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching, h
 - 2026-10-24-08: rework 1 assigned to groky
 - 2026-10-24-08: reworked by groky — - muse (maybe), state how each saving is estimated or measured (baseline and method) and require it in done_when: done. Baseline is the tokenizer count before the fix, the method is the count after the fix, median over at least five samples, and done_when requires the recorded samples and counts. -
 - 2026-10-24-08: rework 1 reviewed; muse yes, claude maybe → more-review
+- 2026-10-24-10: rework 2 assigned to groky
