@@ -3,8 +3,8 @@ topic: "001"
 item: "01"
 task: T12
 author: groky
-state: more-review
-reworks: 0
+state: rework
+reworks: 1
 first_cycle: 2026-10-24-06
 issue: 35
 lou_approved: false
@@ -22,3 +22,4 @@ done_when: The spec names the image, the chart and every required value in the v
 
 ## History
 - 2026-10-24-06: proposed by groky; muse maybe, claude yes → more-review
+- 2026-10-24-08: rework 1 assigned to groky

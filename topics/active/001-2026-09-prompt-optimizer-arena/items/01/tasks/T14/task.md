@@ -3,8 +3,8 @@ topic: "001"
 item: "01"
 task: T14
 author: groky
-state: more-review
-reworks: 0
+state: rework
+reworks: 1
 first_cycle: 2026-10-24-06
 issue: 37
 lou_approved: false
@@ -23,3 +23,4 @@ sources: [https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-g
 
 ## History
 - 2026-10-24-06: proposed by groky; muse yes, claude maybe → more-review
+- 2026-10-24-08: rework 1 assigned to groky

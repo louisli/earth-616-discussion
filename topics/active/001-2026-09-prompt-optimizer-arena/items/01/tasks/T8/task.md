@@ -3,8 +3,8 @@ topic: "001"
 item: "01"
 task: T8
 author: groky
-state: more-review
-reworks: 0
+state: rework
+reworks: 1
 first_cycle: 2026-10-24-06
 issue: 31
 lou_approved: false
@@ -23,3 +23,4 @@ sources: [https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching]
 
 ## History
 - 2026-10-24-06: proposed by groky; muse maybe, claude yes → more-review
+- 2026-10-24-08: rework 1 assigned to groky

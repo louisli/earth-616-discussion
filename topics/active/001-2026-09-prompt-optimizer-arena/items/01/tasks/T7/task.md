@@ -3,8 +3,8 @@ topic: "001"
 item: "01"
 task: T7
 author: groky
-state: more-review
-reworks: 0
+state: rework
+reworks: 1
 first_cycle: 2026-10-24-06
 issue: 30
 lou_approved: false
@@ -22,3 +22,4 @@ done_when: The bucket file contains five rules, one per named anti-pattern, each
 
 ## History
 - 2026-10-24-06: proposed by groky; muse maybe, claude yes → more-review
+- 2026-10-24-08: rework 1 assigned to groky
