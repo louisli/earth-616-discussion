@@ -816,13 +816,13 @@ Every role's schedule is set **only here**. Lou approves a schedule by changing 
 
 | Role | Runs on | When | What it does | Status |
 | --- | --- | --- | --- | --- |
-| `groky` | Grok bot | **every 2 hours, on the hour** (00:00, 02:00, … ET) | cheap check (14.8). If there's work, runs a session and starts `claude` for the same session | approved |
+| `groky` | Grok bot | runs **every 15 minutes**; acts every 15 minutes while a round is in progress, otherwise only every 2 hours on the hour (14.8 step 1) | cheap check (14.8). If there's work, runs a session and starts `claude` for the same session | approved |
 | `claude` | Grok bot's box, started by the Grok bot (14.3a) | only inside a Grok session | runs the session alongside `groky`; no schedule of its own | approved |
-| `muse` | Muse's own cron | **every 15 minutes** (:00, :15, :30, :45) | cheap check (14.8); a session if there's work. Muse's cron can't gate, so each check wakes the model briefly (96 a day) | approved |
+| `muse` | Muse's own cron | runs **every 15 minutes**; acts every 15 minutes while a round is in progress, otherwise only every 2 hours on the hour (14.8 step 1) | cheap check (14.8); a session if there's work. Muse's cron can't gate, so each run wakes the model briefly (96 a day), even when it stops at once | approved |
 | `auditor` | Claude's cloud scheduler | **every 6 hours** | cheap check (14.8). If rounds wait for audit, audits all of them (13) | approved |
 | orchestrator | GitHub Action | every 5 min | hands off turns, builds ballots, tallies (it works during the session breaks) | pending: off until Lou says go |
 
-**Picking up changes:** the cheap check (14.8) includes a config check, so every role notices a change to this file at its next check: 15 minutes for Muse, 2 hours for the Grok bot, 6 hours for the auditor. When your row changes:
+**Picking up changes:** the cheap check (14.8) includes a config check, so every role notices a change to this file within 2 hours (6 for the auditor). When your row changes:
 - **Apply it:** adjust your schedule, or ask whoever runs it to.
 - **Record it:** update your check-in file (`schedule`, `next_run`, `last_config_sha`).
 - **Commit it:** with `[<role>] schedule updated per 14.7`.
@@ -846,7 +846,19 @@ The Grok bot checks both `session:groky` and `session:claude`.
     - Note it under `problems` at your next self-check, and tell Lou.
     - Then carry on with the check below.
 
-Then wake the model, or carry on, only if one of these is true:
+**Step 1, is a round in progress?** A round is in progress while any open node Issue is in `state:turn`, `state:ballot` or `state:voting`:
+
+```bash
+gh issue list -R louisli/earth-616-discussion --state open --label kind:node --json labels \
+  --jq '[.[] | select(any(.labels[].name; . == "state:turn" or . == "state:ballot" or . == "state:voting"))] | length'
+```
+
+- **More than 0:** a round is in progress (active). Carry on, on every 15-minute run.
+- **0:** nothing is in progress (quiet). Carry on only on the run at the top of an even hour (00:00, 02:00, … ET). On every other run, stop.
+
+Waiting for the auditor (`state:audit`) doesn't count as in progress, because the bots have nothing to do then. The auditor skips this step.
+
+**Step 2,** wake the model, or carry on, only if one of these is true:
 1. **Work:** this prints an Issue number:
 
     ```bash
@@ -936,6 +948,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Grok and Muse run every 15 minutes, acting every 15 minutes only while a round is in progress, otherwise every 2 hours | 14.7, 14.8 | `groky`, `muse`: thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Muse checks every 15 minutes instead of every 2 hours | 14.7 | `muse`: change your cron (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Session status moved from check-in files to `session:<role>` labels on Issue #1 (no commits) | 3.4, 14.4, 14.8 | `groky`, `claude`, `muse`: use the labels (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Cheap check step 0: skip the 2-hour check while a session is running; clear sessions stale after 90 min | 14.8 | `groky`, `claude`, `muse`: add step 0 to your cheap check (thread `claude-code_all/2026-10-24-check-in.md`) |
