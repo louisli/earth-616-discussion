@@ -154,7 +154,7 @@ async function botStep(env, scn, bot) {
     open.find((i) => i.labels.includes(`turn:${bot}`) && !i.labels.includes('bot-error') && !i.labels.some((l) => l.startsWith('claimed:')));
   if (!task) return false;
   await gh.addLabels(task.number, [`claimed:${bot}`]);
-  const lock = await gh.createComment(task.number, `lock: ${bot} run sim heartbeat ${env.store.ts()}`);
+  const lock = await gh.createComment(task.number, `[${bot}] lock: ${bot} run sim heartbeat ${env.store.ts()}`);
   const h = parseHeader(task.body);
   checkout(env, h.branch);
   const td = topicDirIn(env.botDir, h.topic);
@@ -189,7 +189,7 @@ async function botStep(env, scn, bot) {
   }
   await gh.deleteComment(lock.id);
   await gh.removeLabel(task.number, `claimed:${bot}`);
-  await gh.createComment(task.number, `${roundDir(node.fm.round)} ${bot} committed`);
+  await gh.createComment(task.number, `[${bot}] ${roundDir(node.fm.round)} ${bot} committed`);
   return true;
 }
 
@@ -350,11 +350,11 @@ test('health: dead locks, bot errors and absent bots', { timeout: 120000 }, asyn
 
   // dead lock: label + stale heartbeat
   await gh.addLabels(n03.number, ['claimed:muse']);
-  await gh.createComment(n03.number, `lock: muse run x heartbeat ${s.ts()}`);
+  await gh.createComment(n03.number, `[muse] lock: muse run x heartbeat ${s.ts()}`);
   s.advance(31);
   // bot error on 03 (a different role than the dead lock)
   await gh.addLabels(n03.number, ['bot-error']);
-  await gh.createComment(n03.number, 'error: claude could not parse header');
+  await gh.createComment(n03.number, '[claude] error: claude could not parse header');
   await runOrch(env);
   assert.ok(!n03.labels.includes('claimed:muse'), 'dead lock released');
   assert.ok(n03.labels.includes('turn:muse'), 'task label kept');
@@ -379,8 +379,9 @@ test('health: dead locks, bot errors and absent bots', { timeout: 120000 }, asyn
   await runOrch(env);
   assert.match(n01.title, /^\[need-lou #1\]/);
 
-  // a bot (not Lou) posting a command is ignored
+  // a bot (not Lou) posting a command is ignored, and so is a tagged comment from a bot running as louisli
   await gh.createComment(n01.number, '/reject');
+  await new MockGitHub(s, 'louisli').createComment(n01.number, '[claude] /reject this is a bot quoting a command');
   await new MockGitHub(s, 'louisli').updateIssue(n01.number, { title: `[updated-lou #1] ${stripPrefix(n01.title)}` });
   await runOrch(env);
   assert.equal(n01.state, 'open', 'bot command ignored');

@@ -15,7 +15,10 @@
 5. **One task per run.** Do one task, release your lock, and exit.
 6. **No guessing.** If labels, files and this rulebook disagree, report it as a bot error (section 11, "On any failure") and stop. Never improvise a fix.
 7. **Keep personal and employer details out.** Don't write details that identify Lou personally, or anything about his employer, unless Lou explicitly includes them for that topic.
-8. **Never Lou's GitHub identity.** Bots and the auditor act on GitHub through the **shared bot account** (a GitHub machine account Lou owns), never through `louisli`. The orchestrator acts as `github-actions[bot]`. This is what makes "comments by `louisli`" mean Lou. Bots tell each other apart by role, in their lock comments, error comments and git author names (`<role>-bot`), not by GitHub login.
+8. **Prefer the bot account.** Bots and the auditor should act on GitHub through the **shared bot account** (a GitHub machine account Lou owns), not `louisli`. The orchestrator acts as `github-actions[bot]`. Bots tell each other apart by role, in comment tags and git author names (`<role>-bot`), not by GitHub login.
+9. **Tag every comment.** Every Issue or PR comment a bot or the auditor posts starts with its role tag, `[<role>] `, for example `[muse] r02 muse version committed`.
+    - **Never start a comment with `/`, and never edit titles.**
+    - **Why:** the orchestrator only treats **untagged** comments by `louisli` that start with `/` as Lou's commands. So a bot that has to run as `louisli` (for example, Claude's cloud scheduler) can never be mistaken for Lou.
 
 ## 1. Glossary
 
@@ -243,7 +246,7 @@ A topic Issue carries exactly one of `topic-state:active`, `done`, `parked` or `
 **How a lock works:**
 1. **Take it.** Add the label `claimed:<role>`, then post a **lock comment** with exactly:
 
-    `lock: <role> run <run-id> heartbeat <ISO-8601 UTC time>`
+    `[<role>] lock: <role> run <run-id> heartbeat <ISO-8601 UTC time>`
 
 2. **Heartbeat.** Edit the lock comment's time at every step boundary of your runbook, and at least every 10 minutes.
 3. **Release.** Delete the lock comment, then remove the label.
@@ -427,7 +430,7 @@ The handshake is the same on node Issues, topic Issues and bundle PRs, and repea
     - **Topic Issues** need no escalation: Lou can start a handshake on one at any time by commenting a command and adding `[updated-lou]` to the title.
 2. **Lou answers.** He comments one command, then changes the title prefix to `[updated-lou #n]` (or adds `[updated-lou]` on a topic Issue).
 3. **The orchestrator acts.**
-    - It takes the newest comment by `louisli` that starts with `/` and has no 👍 reaction from the orchestrator.
+    - It takes the newest **untagged** comment by `louisli` that starts with `/` and has no 👍 reaction from the orchestrator. Escalation markers count only when the orchestrator posted them.
     - It executes the command (9.2), reacts 👍 to that comment, removes the prefix, sets the new state, appends the command to `overrides.md`, and comments what it did.
     - **No such comment, or it doesn't parse:** it restores `[need-lou #n]` and asks Lou to restate.
     - **Lou removed the prefix without a command:** it restores the prefix.
@@ -522,11 +525,11 @@ Anything other than approval goes through the handshake (9.1) on the PR.
     - **Vote:** remove `vote:$ME`. Leave `state:` alone.
 9. **Finish.**
     - Release your lock.
-    - Comment `r<NN> $ME <version|vote> committed (<short sha>)`.
+    - Comment `[$ME] r<NN> $ME <version|vote> committed (<short sha>)`.
     - Exit.
 
 **On any failure** (including a mismatch):
-- Comment `error: $ME <what failed>`.
+- Comment `[$ME] error: $ME <what failed>`.
 - Add the `bot-error` label.
 - Release your lock.
 - Change nothing else, and exit.
@@ -645,7 +648,7 @@ Handle one round per run. The singleton and lock rules (6.3) apply, with role `a
 5. **Hand off.**
     - Remove `state:audit`, add `state:audited`.
     - Release your lock.
-    - Comment `audit rNN: pass` or `audit rNN: void (<checks>)`.
+    - Comment `[auditor] audit rNN: pass` or `[auditor] audit rNN: void (<checks>)`.
     - Exit.
 6. **On any failure:** handle it the same way as a bot (section 11), with role `auditor`.
 
@@ -663,7 +666,10 @@ gh api user --jq .login
 ```
 
 - **No access, or permission below `WRITE`:** stop and tell Lou exactly what failed.
-- **Logged in as `louisli`:** you're a bot or auditor running on Lou's own identity (rule 0.8). Stop and tell Lou you need the shared bot account's token. An intake partner in a live chat with Lou may continue.
+- **Logged in as `louisli`:** you're a bot or auditor running on Lou's own identity (rule 0.8).
+    - **If your harness can use the bot token,** stop and ask Lou for it.
+    - **If it can't** (for example, Claude's cloud scheduler), you may continue. Rule 0.9 (tag every comment) is then your only protection, so follow it on every comment. Note `github_login: louisli` in your check-in file, so Lou knows.
+    - **An intake partner** in a live chat with Lou may always continue.
 
 ### 14.2 Role
 

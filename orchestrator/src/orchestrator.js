@@ -268,6 +268,7 @@ export class Orchestrator {
 
   latestEscalation(comments) {
     for (let i = comments.length - 1; i >= 0; i--) {
+      if (comments[i].user !== this.cfg.orchestrator_login) continue;
       const m = /<!-- need-lou #(\d+) (\{.*?\}) -->/.exec(comments[i].body);
       if (m) {
         try {
@@ -360,7 +361,7 @@ export class Orchestrator {
       const comments = await this.gh.listComments(issue.number);
       for (const label of issue.labels.filter((l) => l.startsWith('claimed:'))) {
         const role = label.slice(8);
-        const locks = comments.filter((c) => new RegExp(`^lock: ${role} run \\S+ heartbeat (\\S+)`).test(c.body.trim()));
+        const locks = comments.filter((c) => new RegExp(`^(?:\\[\\w+\\]\\s*)?lock: ${role} run \\S+ heartbeat (\\S+)`).test(c.body.trim()));
         let age;
         if (locks.length) {
           const ts = new RegExp(`heartbeat (\\S+)`).exec(locks[locks.length - 1].body)[1];
@@ -380,8 +381,9 @@ export class Orchestrator {
     // bot errors
     for (const issue of open.filter((i) => i.labels.includes('bot-error'))) {
       const comments = await this.gh.listComments(issue.number);
-      const err = [...comments].reverse().find((c) => /^error:\s*(\w+)/.test(c.body.trim()));
-      const role = err ? /^error:\s*(\w+)/.exec(err.body.trim())[1] : null;
+      const ERR = /^(?:\[\w+\]\s*)?error:\s*(\w+)/;
+      const err = [...comments].reverse().find((c) => ERR.test(c.body.trim()));
+      const role = err ? ERR.exec(err.body.trim())[1] : null;
       await this.removeLabels(issue, ['bot-error']);
       if (!role || !ROLES.includes(role)) {
         await this.comment(issue, 'bot-error cleared (no `error: <role>` comment found).');
@@ -408,7 +410,7 @@ export class Orchestrator {
         if (this.minutesSince(since) <= this.cfg.absent_bot_hours * 60) continue;
         comments ??= await this.gh.listComments(issue.number);
         const tried = comments.some(
-          (c) => new Date(c.created_at) >= new Date(since) && new RegExp(`^(lock: ${bot}\\b|lock released: ${bot}\\b|error:\\s*${bot}\\b|r\\d+ ${bot}\\b)`).test(c.body.trim()),
+          (c) => new Date(c.created_at) >= new Date(since) && new RegExp(`^(?:\\[\\w+\\]\\s*)?(lock: ${bot}\\b|lock released: ${bot}\\b|error:\\s*${bot}\\b|r\\d+ ${bot}\\b)`).test(c.body.trim()),
         );
         if (tried) continue;
         await this.escalate(issue, 'needs-lou', `${bot} hasn't picked up its \`${label}\` task for ${this.cfg.absent_bot_hours} hours. Is its harness running?`, {
@@ -456,7 +458,7 @@ export class Orchestrator {
     let cmdComment = null;
     for (let i = comments.length - 1; i >= 0; i--) {
       const c = comments[i];
-      if (c.user !== this.cfg.lou_login || !c.body.trim().startsWith('/')) continue;
+      if (c.user !== this.cfg.lou_login || !c.body.trim().startsWith('/')) continue; // tagged bot comments start with '['
       const reactions = await this.gh.listReactions(c.id);
       if (reactions.some((r) => r.user === this.cfg.orchestrator_login && r.content === '+1')) break;
       cmdComment = c;
