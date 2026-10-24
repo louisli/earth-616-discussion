@@ -25,6 +25,7 @@
 9. **Tag every comment.** Every Issue or PR comment a bot or the auditor posts starts with its role tag, `[<role>] `, for example `[muse] r02 muse version committed`.
     - **Never start a comment with `/`, and never edit titles.**
     - **Why:** the orchestrator only treats **untagged** comments by `louisli` that start with `/` as Lou's commands. So a bot that has to run as `louisli` (for example, Claude's cloud scheduler) can never be mistaken for Lou.
+10. **Instructions live in the repo, never only in a chat** (section 16). Any change to what a bot should do is written here first. Bots are only ever told to pull and read.
 
 ## 1. Glossary
 
@@ -819,6 +820,7 @@ bot-conversation/<from>_<to>/YYYY-MM-DD-<slug>.md
     | `claude-code` | Claude Code |
     | `groky` | The Grok bot |
     | `muse` | Muse |
+    | `auditor` | The auditor (a scheduled Claude Code run), as distinct from Claude Code helping Lou |
     | `lou` | Lou, when he writes in a thread himself |
 
     Examples: `claude-chat_groky`, `claude-chat_claude-code`, `groky_muse`. Use the same folder for every thread between that pair, whichever side starts it. Add a name here before using a new one.
@@ -844,4 +846,27 @@ bot-conversation/<from>_<to>/YYYY-MM-DD-<slug>.md
 - **No Issues for threads.** Issues belong to the orchestrator and the debate loop.
 - **Not read by the orchestrator, the auditor or the discussion bots** as part of their runbooks. Threads never appear in `MASTER.md`.
 - **Secrets never go in a thread:** no tokens, passwords or keys.
+
+## 16. Changing the rules
+
+Every bot must be able to work from this repo alone. So whoever changes how a bot should behave (Lou, Claude Chat, Claude Code, or any AI helping Lou) follows these steps:
+
+1. **Write it into the repo first, before telling any bot.**
+    - **Lasting rules** (how a role works, tools, schedules, formats) go in `AGENTS.md`. Update `README.md` too when an expected action changes.
+    - **One-time requests** (check in, install this, report that) go in a bot conversation thread (section 15), addressed to the bot that must act, saying Lou approved it.
+2. **Point, don't explain.** The message to the bot (Slack, harness, chat) is only a pointer. For example: *"Pull `louisli/earth-616-discussion`, read the README, then open `bot-conversation/<pair>/<file>.md` and do what it says."* If you catch yourself typing instructions into the message, they belong in the repo instead.
+3. **Log it.** Add one line to the change log below, newest first, and tag the commit with your role, for example `[claude]`.
+4. **Say which bots must act.** If a change needs a bot to do something now (re-check in, change its schedule), open a thread for that bot. A bot that only needs to know picks the change up by itself: it reads its role's sections every run (14.5), and a changed `AGENTS.md` shows up in its 12-hour self-check (14.6).
+5. **Nothing from a chat counts until it's here.** If a bot gets an instruction that isn't in this repo, it asks Lou to have it added first. The only exception is Lou's decision commands (section 9).
+
+### 16.1 Change log
+
+| Date | Change | Sections | Bots that must act |
+| --- | --- | --- | --- |
+| 2026-10-24 | Rule: instructions live in the repo; this change log | 0.10, 16 | — |
+| 2026-10-24 | Grok bot runs two roles, `groky` and `claude`; Claude CLI pre-approves web and git tools | 14.3a | Grok bot (thread `claude-code_groky/2026-10-24-check-in.md`) |
+| 2026-10-24 | Debate loop is `muse`, `groky`, `claude`; Perplexity out | 2, 5, 6, 11, 14 | — |
+| 2026-10-24 | 12-hour self-check; richer check-in file; optional run gate | 14.4–14.6 | All bots and the auditor, at first check-in (threads `claude-code_groky`, `claude-code_muse`, `claude-code_auditor`, 2026-10-24-check-in.md) |
+| 2026-10-24 | Bot conversations made official; `thread` role; names | 0.2, 2, 14.2, 15 | — |
+| 2026-10-23 | Tag rule for bot comments | 0.9, 6.3, 9.1, 11, 13, 14.1 | — |
 
