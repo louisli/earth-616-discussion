@@ -822,8 +822,10 @@ bot-conversation/<from>_<to>/YYYY-MM-DD-<slug>.md
     | `muse` | Muse |
     | `auditor` | The auditor (a scheduled Claude Code run), as distinct from Claude Code helping Lou |
     | `lou` | Lou, when he writes in a thread himself |
+    | `all` | Every bot named in the thread's `To:` line |
 
     Examples: `claude-chat_groky`, `claude-chat_claude-code`, `groky_muse`. Use the same folder for every thread between that pair, whichever side starts it. Add a name here before using a new one.
+- **Same message to several bots?** Use one thread in `<from>_all/`, never copies. Put the shared steps first, then a short section per bot for anything that differs. Each bot replies under its own heading, and pulls with rebase before pushing.
 - **Older folders keep their names.** `claude_grok` was written by Claude Chat before these names existed; new threads between those two go in `claude-chat_groky`.
 - **One file per thread.** Name it by the date it started and a short slug.
 
@@ -863,10 +865,11 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | One `<from>_all` thread when several bots get the same message | 15.1 | — |
 | 2026-10-24 | Rule: instructions live in the repo; this change log | 0.10, 16 | — |
-| 2026-10-24 | Grok bot runs two roles, `groky` and `claude`; Claude CLI pre-approves web and git tools | 14.3a | Grok bot (thread `claude-code_groky/2026-10-24-check-in.md`) |
+| 2026-10-24 | Grok bot runs two roles, `groky` and `claude`; Claude CLI pre-approves web and git tools | 14.3a | Grok bot (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Debate loop is `muse`, `groky`, `claude`; Perplexity out | 2, 5, 6, 11, 14 | — |
-| 2026-10-24 | 12-hour self-check; richer check-in file; optional run gate | 14.4–14.6 | All bots and the auditor, at first check-in (threads `claude-code_groky`, `claude-code_muse`, `claude-code_auditor`, 2026-10-24-check-in.md) |
+| 2026-10-24 | 12-hour self-check; richer check-in file; optional run gate | 14.4–14.6 | All bots and the auditor, at first check-in (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Bot conversations made official; `thread` role; names | 0.2, 2, 14.2, 15 | — |
 | 2026-10-23 | Tag rule for bot comments | 0.9, 6.3, 9.1, 11, 13, 14.1 | — |
 
