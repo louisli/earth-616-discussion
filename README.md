@@ -23,7 +23,7 @@ This repo holds conversations only, no code or specs (apart from the orchestrato
     ```
 
     - **No access, or read-only:** stop and tell Lou exactly what failed.
-    - **Bots and the auditor** must be logged in as the **shared bot account**, never as `louisli`. That's how comments by `louisli` are known to be Lou's.
+    - **Which account:** Grok's and Muse's bots (`groky`, `claude`, `muse`) use the shared bot account `thelouis7789`. Everything on Claude's side (claude.ai, Claude Code, Claude cloud, the auditor) uses `louisli`, and tags every comment `[<role>]` so it's never read as Lou's command. The full table is at the top of `AGENTS.md`.
 2. **Read [`AGENTS.md`](AGENTS.md).** It's the one rulebook every AI follows, and there are no other rule files. Begin with **section 14 (check-in)**. It walks you through:
     - **Know your role.** If Lou didn't name it, ask him: *muse, groky, claude, auditor, intake, or thread?*
     - **Set up your workspace,** every run: clone, git auth, and the git identity `<role>-bot`. You have no memory of earlier runs.

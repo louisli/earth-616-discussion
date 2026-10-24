@@ -9,7 +9,18 @@
     Sections 0–3 apply to both.
 - **Tools:** work only through `git` and `gh`.
 - **Lou:** GitHub login `louisli`.
-- **Shared bot account:** GitHub login `thelouis7789` (profile name `Lou[bot]`). Lou confirmed it on 2026-10-24.
+- **Shared bot account:** GitHub login `thelouis7789` (profile name `Lou[bot]`). Lou confirmed it on 2026-10-24. It has read and write access to this repo and to `projectll/j-benchmark-testing-ai-models`.
+- **Which account each AI uses** (Lou set this on 2026-10-24):
+
+    | Who | Runs on | GitHub account |
+    | --- | --- | --- |
+    | `groky` (Grok bot) and `claude` (the Claude it starts on its box) | Grok bot's box | `thelouis7789` |
+    | `muse` | Muse | `thelouis7789` |
+    | `auditor` | Claude's cloud scheduler (Claude Code) | `louisli` |
+    | Claude Code and Claude Chat helping Lou (`intake`, `thread`) | claude.ai, Claude Code, Claude cloud | `louisli` |
+    | orchestrator | GitHub Action | `github-actions[bot]` |
+
+    Everything on Claude's side (claude.ai, Claude Code, Claude cloud) is `louisli`. Only the bots Grok and Muse run use `thelouis7789`. The `claude` discussion role runs on the Grok bot's box, not on Claude's side, so it uses the box's token.
 - **Times** in this file are US Eastern (America/New_York).
 
 ## 0. Ground rules for every AI
@@ -23,7 +34,7 @@
 5. **Do only what your assignment says** (7.1), then release your lock and exit.
 6. **No guessing.** If labels, files and this rulebook disagree, report it as a bot error (section 11, "On any failure") and stop. Never improvise a fix.
 7. **Keep personal and employer details out.** Don't write details that identify Lou personally, or anything about his employer, unless Lou explicitly includes them for that topic.
-8. **Prefer the bot account.** Bots and the auditor should act on GitHub through the **shared bot account** (a GitHub machine account Lou owns), not `louisli`. The orchestrator acts as `github-actions[bot]`. Bots tell each other apart by role, in comment tags and git author names (`<role>-bot`), not by GitHub login.
+8. **Use the account the table in the header gives you.** Grok's and Muse's bots use the shared bot account; everything on Claude's side, the auditor included, uses `louisli`. The orchestrator acts as `github-actions[bot]`. AIs tell each other apart by role, in comment tags and git author names (`<role>-bot`), not by GitHub login.
 9. **Tag every comment.** Every Issue or PR comment a bot or the auditor posts starts with its role tag, `[<role>] `, for example `[muse] 2026-10-24-02 breakdown committed`.
     - **Never start a comment with `/`, and never edit titles.**
     - **Why:** the orchestrator only treats **untagged** comments by `louisli` that start with `/` as Lou's commands. So a bot that has to run as `louisli` (for example, Claude's cloud scheduler) can never be mistaken for Lou.
@@ -641,10 +652,9 @@ gh api user --jq .login
 ```
 
 - **No access, or permission below `WRITE`:** stop and tell Lou exactly what failed.
-- **Logged in as `louisli`:** you're a bot or auditor running on Lou's own identity (rule 0.8).
-    - **If your harness can use the bot token,** stop and ask Lou for it.
-    - **If it can't** (for example, Claude's cloud scheduler), you may continue. Rule 0.9 (tag every comment) is then your only protection, so follow it on every comment. Note `github_login: louisli` in your check-in file, so Lou knows.
-    - **An intake partner** in a live chat with Lou may always continue.
+- **Check your login against the account table in the header.**
+    - **`muse`, `groky`, `claude`:** must be `thelouis7789`. If you're logged in as `louisli`, stop and tell Lou.
+    - **`auditor`, `intake`, `thread`** (Claude's side): `louisli` is expected. Rule 0.9 (tag every comment) is what keeps your comments from being read as Lou's commands, so follow it on every comment.
 
 ### 14.2 Role
 
@@ -889,6 +899,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Accounts made explicit: Grok's and Muse's bots use `thelouis7789`; everything on Claude's side (claude.ai, Claude Code, Claude cloud, the auditor) uses `louisli` | header, 0.8, 14.1 | — |
 | 2026-10-24 | Breakdowns are one proposal as a tree: concept → branches → leaves; at least 3 leaves, no maximum (was at most 10 tasks) | 1, 5.1, 7.2, 7.4, 8, 10.2 | `groky`, `claude`, `muse`, `auditor`: same thread, `claude-code_all/2026-10-24-even-hour-cycles.md` |
 | 2026-10-24 | **Even-hour cycles replace rounds.** Every even hour: each bot breaks down its own item, one bot per item, mapped in `assignments.md` (:00–:25); the other two review it with yes / no / maybe (:30–:45), the orchestrator tallies; more-review tasks are reworked by their author up to 2 times, then blocked; the auditor exports approved tasks every 6 hours as ideas to the topic's target repo. Grok and Muse run at :00, :15, :30 of even hours; new cheap check; sessions and session labels removed | 1–14 | `groky`, `claude`, `muse`, `auditor`: thread `claude-code_all/2026-10-24-even-hour-cycles.md` |
 | 2026-10-24 | Grok and Muse run every 15 minutes, acting every 15 minutes only while a round is in progress, otherwise every 2 hours | 14.7, 14.8 | `groky`, `muse`: thread `claude-code_all/2026-10-24-check-in.md` |
