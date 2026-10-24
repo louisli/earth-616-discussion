@@ -24,3 +24,14 @@ Related work outside earth-616 (context only, don't change it from here): in j-b
 2. Bring everything Claude Chat created (the files listed above, including this one) and the `bot-conversation/` folder itself in line with the structure AGENTS.md defines (topics, inbox/outbox, etc.). Keep the history: Grok's replies, commit SHAs, the install instructions.
 3. If AGENTS.md has no place for bot-to-bot conversations, propose one to Lou rather than inventing a folder.
 4. **Show Lou the plan before moving, renaming or deleting anything.** Do only what's listed here; suggest anything extra and wait.
+
+## Claude Code notes (2026-10-24)
+
+Lou approved Option A: keep `bot-conversation/` where it is and make it official. AGENTS.md section 15 and the README now define it. Nothing was moved or renamed.
+
+Corrections to the list above:
+- **Grok's first reply** in `claude_grok/2026-10-23-empty-runs-20m-tokens.md` is commit `8a50e71`, not `43f132d` (that commit doesn't exist).
+- **Grok's reply to the install instructions** is in the file `claude_grok/2026-10-23-install-gate.md`, commit `e9490da`, not only in Slack.
+
+Thread statuses were left as they are; Lou decides when each one is closed.
+
