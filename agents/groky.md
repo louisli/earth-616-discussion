@@ -3,13 +3,14 @@ role: groky
 github_login: thelouis7789
 harness: the Grok bot (Groky) on its own Linux box, via gh and git
 web_access: yes
-schedule: not scheduled yet (Lou approved it on 2026-10-24, but a gated box-triggered routine can't be confirmed yet; waiting for Lou's choice on the fallback)
-schedule_prompt: Your role is `groky`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once.
-next_run: unknown
+schedule: Grok Bot routine at :00, :15 and :30 of every even hour ET (36 runs a day, CRON_TZ=America/New_York 0,15,30 0-22/2 * * *), per 14.7; the model wakes briefly and runs the cheap check
+schedule_prompt: Your role is `groky`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once. Start with the cheap check in AGENTS.md 14.8 (gh and git only) before reading anything else, and if it says there is no work, stop quietly.
+next_run: 2026-10-24T08:00:00Z
 claude_schedule_prompt: Your role is `claude`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once.
-claude_schedule: running since 2026-10-24T04:48Z as a gated bash loop on the box (run-earth-claude.sh); ticks every 5 minutes, starts Claude only if turn:claude or vote:claude is open or last_self_check in agents/claude.md is over 12 hours old
-claude_next_run: 2026-10-24T04:55:00Z
+claude_schedule: gate loop on the box (run-earth-claude.sh, no model) at :00, :15 and :30 of every even hour ET; it starts Claude only when todo:claude is on an open Issue (14.8 step 1), AGENTS.md changed since claude's last_config_sha, or Claude's self-check is over 12 hours old; skips while a claimed:claude lock is live
+claude_next_run: 2026-10-24T08:00:00Z
 token_expires: unknown
+last_config_sha: 7d4f627830e290ab1c119f4b5c5d0f6384ff04a8
 first_check_in: 2026-10-24
 last_self_check: 2026-10-24T04:39:40Z
 status: ok
