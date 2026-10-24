@@ -1,13 +1,13 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "05"
 title: Scoring trust and eval methodology
 priority: 2
 depends_on:
   - "03"
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 05 Scoring trust and eval methodology
