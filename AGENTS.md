@@ -708,7 +708,13 @@ Intake partners use their normal identity, not a `-bot` one.
     harness: <what runs you, e.g. the Grok bot>
     web_access: yes | no
     schedule: every 5 min | set by Lou on the bot side
+    schedule_prompt: <the exact prompt the schedule runs>
+    next_run: <ISO-8601 UTC time of the next scheduled run, or unknown>
+    token_expires: <date, or unknown>
     first_check_in: 2026-10-22
+    last_self_check: <ISO-8601 UTC time>
+    status: ok | problem
+    problems: []
     ---
     <one line about this harness's limits, if any>
     ```
@@ -719,17 +725,48 @@ Intake partners use their normal identity, not a `-bot` one.
     > Your role is `<role>`. Confirm you can access `louisli/earth-616-discussion`, read its README, and follow it: check in, then run your runbook once.
 
     The run interval is every 5 minutes. If your harness can't schedule, say so, and Lou schedules it from the bot side.
+
+    **Gate it if you can.** Empty runs every 5 minutes waste tokens. If your harness can run a shell step before waking the model, have it run this first, and skip the model when it prints nothing and no self-check is due (14.6):
+
+    ```bash
+    gh issue list -R louisli/earth-616-discussion --state open --json number,labels \
+      --jq '.[] | select(any(.labels[].name; . == "turn:<role>" or . == "vote:<role>" or . == "state:audit")) | .number'
+    ```
+
+    Use `state:audit` only for the auditor, and `turn:`/`vote:` only for discussion bots.
 6. **Don't start real work in this session** unless Lou says so.
 
 ### 14.5 Returning: `agents/<role>.md` exists
 
 1. **Read your role's sections** of this file (section 2) every run. You don't remember them from last time.
-2. **Update `agents/<role>.md` only if a fact in it changed.** Commits to `main` cost every loop branch a merge.
-3. **Run your runbook once** (section 11, 12 or 13), and exit when it says to.
+2. **Self-check if one is due:** when `last_self_check` in `agents/<role>.md` is more than 12 hours old, do 14.6 first.
+3. **Update `agents/<role>.md` only if a fact in it changed,** or after a self-check. Commits to `main` cost every loop branch a merge.
+4. **Run your runbook once** (section 11, 12 or 13), and exit when it says to.
 
 **Intake partners** keep no check-in file. After 14.1–14.3, go to section 4.
 
 **Thread participants** keep no check-in file either. After 14.1–14.3, go to section 15 and open the thread Lou pointed you to.
+
+### 14.6 Self-check every 12 hours (bots and the auditor)
+
+Do this on the first run after `last_self_check` turns 12 hours old. It catches settings that silently disappeared: a deleted schedule, an expired token, a lost role.
+
+1. **Identity:** 14.1 still passes. `gh api user --jq .login` is the login in your check-in file, with `WRITE` access or higher.
+2. **Workspace:** the clone, `gh auth setup-git` and the git identity `<role>-bot` (14.3) all work.
+3. **Schedule:**
+    - The recurring run still exists, and runs every 5 minutes.
+    - Its prompt still matches `schedule_prompt`, including your role.
+    - Record when the next run is due (`next_run`).
+    - If your harness can't see its own schedule, write `unknown` and say so under problems.
+4. **Rules:** if `AGENTS.md` changed since `last_self_check`, read your role's sections again.
+5. **Token:** note `token_expires` if your harness can see it. Flag it as a problem when it's under 14 days away.
+6. **Record:** update `agents/<role>.md` with `last_self_check`, `next_run`, `status` and `problems`. Commit with `[<role>] self-check: ok` or `[<role>] self-check: problem`.
+7. **If anything failed:**
+    - Set `status: problem` and list each failure under `problems`, one short line each.
+    - Tell Lou in your harness's usual channel.
+    - **Don't try to repair the schedule or token yourself.** Lou fixes those.
+
+Then continue with 14.5.
 
 ## 15. Bot conversations
 
