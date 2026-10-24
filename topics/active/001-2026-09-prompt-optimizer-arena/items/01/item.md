@@ -44,7 +44,7 @@ _From groky's proposal, cycle 2026-10-24-06._
 - T5 (approved, groky): Specify the signed definitions bundle format
 - T6 (approved, groky): Specify offline import of definitions bundles for air-gapped sites
 - T7 (approved, groky): Write the day-one rules for the prompt-structure anti-patterns bucket
-- T8 (more-review, groky): Write the day-one rules for the efficiency and cost bucket
+- T8 (rework, groky): Write the day-one rules for the efficiency and cost bucket
 - T9 (approved, groky): Write the day-one rules for the safety and leakage bucket
 - T10 (approved, groky): Write the day-one best-practice templates for four task types
 - T11 (approved, groky): Map the client fill-in-the-blank template to the best-practice templates bucket
