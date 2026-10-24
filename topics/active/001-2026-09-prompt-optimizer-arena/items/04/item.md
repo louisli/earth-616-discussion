@@ -33,7 +33,22 @@ _From muse's proposal, cycle 2026-10-24-10._
 
 ## Tasks
 <!-- Every task of this item and its state. Don't propose duplicates of approved or exported ones. -->
-
+- T1 (more-review, muse): Build extraction first, then efficiency, then robustness
+- T2 (approved, muse): Map the three cases onto the item 03 category scheme
+- T3 (approved, muse): Define the common case specification format
+- T4 (approved, muse): Freeze the extraction document set at 20 messy documents
+- T5 (approved, muse): Write the extraction naive baseline prompt verbatim
+- T6 (approved, muse): Define extraction scoring as per-field precision and recall
+- T7 (more-review, muse): Freeze the efficiency repo fixture at about 50 files and about 10MB
+- T8 (more-review, muse): Write the efficiency naive baseline prompt verbatim
+- T9 (approved, muse): Define efficiency scoring as correctness gated on tokens to correct answer
+- T10 (approved, muse): Freeze the robustness label set at six customer intents
+- T11 (approved, muse): Freeze the robustness input set at 50 messages with fixed messiness slices
+- T12 (approved, muse): Write the robustness naive baseline prompt verbatim
+- T13 (more-review, muse): Define robustness scoring as accuracy on the full messy set
+- T14 (approved, muse): Cap and cache the 10MB efficiency baseline runs
+- T15 (approved, muse): Give each case one enterprise demo form
+- T16 (more-review, muse): Keep held-out ground truth hidden from optimizers
 
 ## Cycles
 - 2026-10-24-10: author muse; 16 tasks: 11 approved, 5 more review, 0 blocked, 0 rejected
