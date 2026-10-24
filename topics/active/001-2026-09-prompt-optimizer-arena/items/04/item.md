@@ -1,13 +1,13 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "04"
 title: Test cases
 priority: 3
 depends_on:
   - "03"
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 04 Test cases
