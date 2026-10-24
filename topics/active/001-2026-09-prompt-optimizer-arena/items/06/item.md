@@ -1,13 +1,13 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "06"
 title: House optimizer design
 priority: 5
 depends_on:
   - "05"
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 06 House optimizer design
