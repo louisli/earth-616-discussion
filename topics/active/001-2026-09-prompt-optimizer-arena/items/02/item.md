@@ -1,13 +1,13 @@
 ---
+bot_errors: {}
+dead_locks: {}
+next_task: 1
 topic: "001"
 item: "02"
 title: Business model, competition and positioning
 priority: 7
 depends_on:
   - "01"
-next_task: 1
-bot_errors: {}
-dead_locks: {}
 ---
 
 # 02 Business model, competition and positioning
