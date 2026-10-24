@@ -41,13 +41,13 @@ _From muse's proposal, cycle 2026-10-24-06._
 - T2 (approved, muse): Define the Offline track entry contract
 - T3 (approved, muse): Forbid cross-track ranking in every published view
 - T4 (approved, muse): Check vendor terms for each commercial entrant candidate
-- T5 (more-review, muse): Freeze the MVP entrant roster at five entrants per track
+- T5 (rework, muse): Freeze the MVP entrant roster at five entrants per track
 - T6 (approved, muse): Write a reproducible run recipe for each open-source optimizer
-- T7 (more-review, muse): Pick the single MVP target model
-- T8 (more-review, muse): Reconcile the three MVP categories with item 04 case types
+- T7 (rework, muse): Pick the single MVP target model
+- T8 (rework, muse): Reconcile the three MVP categories with item 04 case types
 - T9 (approved, muse): Lock the MVP eval size at about 50 prompts per category
 - T10 (approved, muse): Specify the static MVP leaderboard
-- T11 (more-review, muse): Show model-dependent results without hiding harm
+- T11 (rework, muse): Show model-dependent results without hiding harm
 - T12 (approved, muse): Specify the try-it page as a post-MVP phase
 - T13 (approved, muse): Question for Lou: confirm which commercial tools may be named publicly
 
