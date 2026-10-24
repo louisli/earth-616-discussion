@@ -831,7 +831,16 @@ Every role's schedule is set **only here**. Lou approves a schedule by changing 
 
 ### 14.8 The cheap check and sessions
 
-**The cheap check.** Every scheduled run starts here, before reading this file or anything else, because reading the rules costs far more than checking. Wake the model, or carry on, only if one of these is true:
+**The cheap check.** Every scheduled run starts here, before reading this file or anything else, because reading the rules costs far more than checking.
+
+**Step 0, is a session already running?** Run `git fetch`, then read `session` and `session_started` from your check-in file on `origin/main`. The Grok bot checks both `agents/groky.md` and `agents/claude.md`.
+- **`running`, started under 90 minutes ago:** a session is still going (5 cycles is 75 minutes at most). **Stop now.** This run is skipped, the same as pausing the 2-hour check, and it resumes by itself once the session ends.
+- **`running`, started 90 minutes ago or more:** the session died without ending.
+    - Set `session: idle`, add `session started <time> never ended` under `problems`, and commit `[<role>] stale session cleared`.
+    - Tell Lou, then carry on with the check below.
+- **`idle` or `waiting-for-review`:** carry on.
+
+Then wake the model, or carry on, only if one of these is true:
 1. **Work:** this prints an Issue number:
 
     ```bash
@@ -920,6 +929,7 @@ Every bot must be able to work from this repo alone. So whoever changes how a bo
 
 | Date | Change | Sections | Bots that must act |
 | --- | --- | --- | --- |
+| 2026-10-24 | Cheap check step 0: skip the 2-hour check while a session is running; clear sessions stale after 90 min | 14.8 | `groky`, `claude`, `muse`: add step 0 to your cheap check (thread `claude-code_all/2026-10-24-check-in.md`) |
 | 2026-10-24 | Sessions: Grok and Muse check every 2 hours on the hour, then 10-min work / 5-min break × up to 5; auditor every 6 hours, audits all waiting rounds; cheap check before reading anything | 13, 14.4, 14.7, 14.8 | `groky`, `claude`, `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Schedules set only in 14.7, picked up within an hour; auditor hourly, up to 3 audits per run | 13, 14.4, 14.6, 14.7 | `claude` (Grok bot: add the hourly config check to its loop), `muse`, `auditor`: see thread `claude-code_all/2026-10-24-check-in.md` |
 | 2026-10-24 | Shared bot account named (`thelouis7789`) | header | Grok bot: see thread `claude-code_groky/2026-10-24-check-in.md` |
