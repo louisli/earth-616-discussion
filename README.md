@@ -129,7 +129,7 @@ inbox/ ──(Lou + any AI, §4)──▶ topics/active/NNN-…/ ──▶ topic
 ```
 README.md        this file
 AGENTS.md        the one rulebook for every AI
-CLAUDE.md        one-line pointer here, for Claude Code
+CLAUDE.md        router for Claude Code (AGENTS.md section 17)
 MASTER.md        master list: every topic and item, with state and task counts
 TEMPLATE.md      template for a seed
 agents/          one check-in file per AI role
