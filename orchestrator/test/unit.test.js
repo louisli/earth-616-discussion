@@ -16,12 +16,12 @@ test('ids and folders', () => {
 });
 
 test('header round-trip keeps "03" a string', () => {
-  const h = { topic: '001', node: '03.10', round: 2, order: ['muse', 'claude', 'perplexity'], depends_on: ['03'] };
+  const h = { topic: '001', node: '03.10', round: 2, order: ['muse', 'claude', 'groky'], depends_on: ['03'] };
   const body = withHeader('hello', h);
   const back = parseHeader(body);
   assert.equal(back.node, '03.10');
   assert.equal(back.topic, '001');
-  assert.deepEqual(back.order, ['muse', 'claude', 'perplexity']);
+  assert.deepEqual(back.order, ['muse', 'claude', 'groky']);
   assert.ok(renderHeader(h).startsWith('<!-- state'));
 });
 
@@ -59,10 +59,10 @@ function sampleRound() {
   node.fm.round = 1;
   const versions = {
     muse: parseVersion(v('muse', 1, 'A', '## I1\naction: keep\ntype: decision\nstatement: Two tracks.\n\n## I2\naction: keep\ntype: decision\nstatement: Model M.\n\n## NEW1\naction: keep\ntype: build\nstatement: Build harness.\nsplit_into: [Harness]', 'split')),
-    perplexity: parseVersion(v('perplexity', 1, 'B', '## I1\naction: keep\ntype: decision\nstatement: Two tracks, separate boards.\n\n## I2\naction: drop\nreason: premature\n\n## A.NEW1\naction: keep\ntype: build\nstatement: Build harness first.', 'split')),
+    groky: parseVersion(v('groky', 1, 'B', '## I1\naction: keep\ntype: decision\nstatement: Two tracks, separate boards.\n\n## I2\naction: drop\nreason: premature\n\n## A.NEW1\naction: keep\ntype: build\nstatement: Build harness first.', 'split')),
     claude: parseVersion(v('claude', 1, 'C', '## I1\naction: keep\ntype: decision\nstatement: One track.\n\n## I2\naction: keep\ntype: decision\nstatement: Model N.\n\n## A.NEW1\naction: keep\ntype: build\nstatement: Harness.\n\n## NEW1\naction: keep\ntype: claim\nstatement: Extra.', 'revise')),
   };
-  const positions = { muse: 'A', perplexity: 'B', claude: 'C' };
+  const positions = { muse: 'A', groky: 'B', claude: 'C' };
   const ballot = buildBallot({ node, versions, positions, secret: 's3cret', label: '001/03/1' });
   return { node, versions, ballot };
 }
@@ -75,7 +75,7 @@ test('ballot: letters are a deterministic permutation; new items get neutral ids
   assert.equal(ballot.originOfNeutral.N2, 'C.NEW1');
   const again = sampleRound().ballot;
   assert.deepEqual(again.letterOf, ballot.letterOf);
-  const L = ballot.letterOf.perplexity;
+  const L = ballot.letterOf.groky;
   assert.equal(ballot.treatments.I2[L].status, 'drop');
   assert.equal(ballot.treatments.N2[ballot.letterOf.muse].status, 'missing');
 });
@@ -83,12 +83,12 @@ test('ballot: letters are a deterministic permutation; new items get neutral ids
 test('tally: go, soft go with dissent, escalate, rework, drop via dropped letter, atomic', () => {
   const { node, ballot } = sampleRound();
   const Lm = ballot.letterOf.muse;
-  const Lp = ballot.letterOf.perplexity;
+  const Lp = ballot.letterOf.groky;
   const Lc = ballot.letterOf.claude;
   const vote = (bot, lines, atomic) => parseVote(`---\nnode: 03\nbot: ${bot}\nround: 1\n---\n${lines}\natomic: ${atomic} — why\n`, { bot });
   const votes = {
     muse: vote('muse', `I1: ${Lp} — r\nI2: ${Lp} — r\nN1: ${Lm} — r\nN2: none — r`, 'split'),
-    perplexity: vote('perplexity', `I1: ${Lp} — r\nI2: drop — r\nN1: ${Lm} — r\nN2: none — r`, 'split'),
+    groky: vote('groky', `I1: ${Lp} — r\nI2: drop — r\nN1: ${Lm} — r\nN2: none — r`, 'split'),
     claude: vote('claude', `I1: ${Lc} — r\nI2: ${Lc} — r\nN1: ${Lm} — r\nN2: ${Lc} — r`, 'leaf'),
   };
   const t = tally(ballot, votes);
@@ -111,7 +111,7 @@ test('tally: go, soft go with dissent, escalate, rework, drop via dropped letter
 
   const split = tally(ballot, {
     muse: vote('muse', `I1: ${Lm} — r`, 'revise'),
-    perplexity: vote('perplexity', `I1: ${Lp} — r`, 'revise'),
+    groky: vote('groky', `I1: ${Lp} — r`, 'revise'),
     claude: vote('claude', `I1: ${Lc} — r`, 'revise'),
   });
   assert.equal(split.items.find((r) => r.id === 'I1').outcome, 'escalate');
@@ -122,9 +122,9 @@ test('tally: go, soft go with dissent, escalate, rework, drop via dropped letter
 });
 
 test('order: A spread across active nodes, rotating otherwise', () => {
-  assert.deepEqual(chooseOrder({ prevA: null, busyA: [] }), ['muse', 'perplexity', 'claude']);
-  assert.deepEqual(chooseOrder({ prevA: 'muse', busyA: [] }), ['perplexity', 'claude', 'muse']);
-  assert.deepEqual(chooseOrder({ prevA: 'muse', busyA: ['perplexity'] }), ['claude', 'muse', 'perplexity']);
+  assert.deepEqual(chooseOrder({ prevA: null, busyA: [] }), ['muse', 'groky', 'claude']);
+  assert.deepEqual(chooseOrder({ prevA: 'muse', busyA: [] }), ['groky', 'claude', 'muse']);
+  assert.deepEqual(chooseOrder({ prevA: 'muse', busyA: ['groky'] }), ['claude', 'muse', 'groky']);
 });
 
 test('next nodes: priority, dependencies, children before later roots, slots', () => {
@@ -195,8 +195,8 @@ test('commands', () => {
 test('audit, order and node round-trips', () => {
   const a = parseAudit('```\nresult: void\nfailed: [2, 5]\nevidence: x\nescalate: [I3]\n```');
   assert.deepEqual(a, { ok: true, result: 'void', failed: ['2', '5'], escalate: ['I3'] });
-  const o = parseOrder(renderOrder({ node: '03.2', round: 3, order: ['claude', 'muse', 'perplexity'] }));
-  assert.deepEqual(o.order, ['claude', 'muse', 'perplexity']);
+  const o = parseOrder(renderOrder({ node: '03.2', round: 3, order: ['claude', 'muse', 'groky'] }));
+  assert.deepEqual(o.order, ['claude', 'muse', 'groky']);
   assert.equal(o.node, '03.2');
   const n = { fm: newNodeFm({ id: '03.10', parent: '03', depth: 1, title: 'Title: with colon', priority: 1, issue: 9 }), items: [{ id: 'I1', fields: { type: 'open', statement: 'x, y' } }], context: 'Parent said so.' };
   const back = parseNode(renderNode(n));

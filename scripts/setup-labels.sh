@@ -23,7 +23,7 @@ label "state:rejected"    "000000" "Rejected by Lou"
 label "state:parked"      "cccccc" "Shelved by Lou"
 
 # turn: / vote: / claimed:
-for b in muse perplexity claude; do
+for b in muse groky claude; do
   label "turn:$b"    "1d76db" "$b's version turn"
   label "vote:$b"    "1d76db" "$b still owes a vote"
   label "claimed:$b" "ededed" "Lease: a $b run is working on this"

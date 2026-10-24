@@ -17,7 +17,7 @@ import { standardLabels } from '../src/labels.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const baseConfig = JSON.parse(fs.readFileSync(path.join(here, '..', 'config.json'), 'utf8'));
-const BOTS = ['muse', 'perplexity', 'claude'];
+const BOTS = ['muse', 'groky', 'claude'];
 
 function sh(cwd, args, author = 'test') {
   return execFileSync('git', args, {
@@ -346,7 +346,7 @@ test('health: dead locks, bot errors and absent bots', { timeout: 120000 }, asyn
   const n03 = s.issues.find((i) => parseHeader(i.body)?.node === '03');
   const n01 = s.issues.find((i) => parseHeader(i.body)?.node === '01');
   assert.ok(n03.labels.includes('turn:muse'), `03 starts with muse (labels: ${n03.labels})`);
-  assert.ok(n01.labels.includes('turn:perplexity'), '01 starts with perplexity (A spread across nodes)');
+  assert.ok(n01.labels.includes('turn:groky'), '01 starts with groky (A spread across nodes)');
 
   // dead lock: label + stale heartbeat
   await gh.addLabels(n03.number, ['claimed:muse']);
@@ -365,7 +365,7 @@ test('health: dead locks, bot errors and absent bots', { timeout: 120000 }, asyn
   assert.equal(node03.fm.dead_locks.muse, 1);
   assert.equal(node03.fm.bot_errors.claude, 1);
 
-  // absent bot: nobody touches 01 for 6+ hours (perplexity never takes its turn)
+  // absent bot: nobody touches 01 for 6+ hours (groky never takes its turn)
   s.advance(6 * 60 + 5);
   await runOrch(env);
   assert.ok(n01.labels.includes('state:needs-lou'), `01 escalated (labels: ${n01.labels})`);

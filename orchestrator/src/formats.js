@@ -122,7 +122,7 @@ export function parseSeed(text, fileName) {
 // ---------- node.md (AGENTS.md 8.4) ----------
 
 export function emptyCounters() {
-  return { muse: 0, perplexity: 0, claude: 0, auditor: 0 };
+  return { muse: 0, groky: 0, claude: 0, auditor: 0 };
 }
 
 export function newNodeFm({ id, parent = null, depth, title, priority, depends_on = [], issue, round_limit = 6 }) {

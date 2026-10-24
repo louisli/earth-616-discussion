@@ -1,6 +1,6 @@
 # AGENTS.md — the one rulebook
 
-**Every AI that touches this repo follows this file.** That includes the Muse, Perplexity and Claude bots, the orchestrator, the auditor, and any AI helping Lou in a chat (Claude, Grok, Muse, Perplexity). There are no other rule files. If something isn't defined here, don't do it: ask Lou.
+**Every AI that touches this repo follows this file.** That includes the Muse, Grok and Claude discussion bots, the orchestrator, the auditor, and any AI helping Lou in a chat (Claude, Grok, Muse, Perplexity). There are no other rule files. If something isn't defined here, don't do it: ask Lou.
 
 - **Repo:** `louisli/earth-616-discussion`. It has two functions:
     - **The debate loop:** sections 4–14.
@@ -47,7 +47,7 @@
 
 | Role | Who | Sections to follow | Writes |
 | --- | --- | --- | --- |
-| **Discussion bot** | `muse`, `perplexity`, `claude` (Claude chat, driven by the Grok bot). Each works through `git`/`gh` in whatever harness runs it, logged in as the shared bot account. | 0, 1, 3, 5, 6, 7, 8, **11**, **14** | `research-<me>.md`, `version-<me>.md`, `vote-<me>.md`, `agents/<me>.md`; its own `turn:`, `vote:` and `claimed:` labels; `bot-error`; its lock comment |
+| **Discussion bot** | `muse` (Muse), `groky` (the Grok bot itself), `claude` (Claude, launched by the Grok bot through the Claude CLI on its box, doing its own git work). Each works through `git`/`gh` in whatever harness runs it, logged in as the shared bot account. | 0, 1, 3, 5, 6, 7, 8, **11**, **14** | `research-<me>.md`, `version-<me>.md`, `vote-<me>.md`, `agents/<me>.md`; its own `turn:`, `vote:` and `claimed:` labels; `bot-error`; its lock comment |
 | **Orchestrator** | A script run as a scheduled GitHub Action, with only one run at a time. No model, no opinions. | All, especially **12** | Everything else on loop and bundle branches and on `main` (`node.md`, ballots, results, `MASTER.md`, `tree.md`, `overrides.md`, `outbox/`, folder moves), plus all Issues, labels, titles and PRs |
 | **Auditor** | Claude Code, logged in as the shared bot account | 0, 1, 3, 5, 6, 7, 8, **13**, **14** | `audit.md`, `audit-log.md`, `agents/auditor.md`; `claimed:auditor`; `state:audit` → `state:audited`; `bot-error` |
 | **Intake partner** | Any AI helping Lou in a live chat | 0, 1, 3, **4**, **14** | New topic folder files and the new topic's row in `MASTER.md`, only after Lou says **go** |
@@ -133,7 +133,7 @@ path: topics/active/001-2026-09-prompt-optimizer-arena/nodes/03/03.2
 round: 2
 attempt: 1
 round_limit: 6
-order: [perplexity, claude, muse]
+order: [groky, claude, muse]
 lou_cycles: 0
 priority: 1
 -->
@@ -177,9 +177,9 @@ Promotion happens only in a **live session with Lou**, with any one AI as partne
 ### 5.1 Pipeline
 
 - **Up to 3 nodes in rounds at a time** (`state:turn` through `state:audited`).
-- **Position A is spread across bots.** When a round starts, position A goes to a bot that isn't position A on any other active node. If that leaves a choice, the bot that follows the previous round's position A in the order `muse → perplexity → claude → muse` gets it. B and C follow in that same cycle.
+- **Position A is spread across bots.** When a round starts, position A goes to a bot that isn't position A on any other active node. If that leaves a choice, the bot that follows the previous round's position A in the order `muse → groky → claude → muse` gets it. B and C follow in that same cycle.
 
-| Turn | Muse | Perplexity | Claude |
+| Turn | Muse | Groky | Claude |
 | --- | --- | --- | --- |
 | 1st | Node X (A) | Node Y (A) | Node Z (A) |
 | 2nd | Node Z (B) | Node X (B) | Node Y (B) |
@@ -236,7 +236,7 @@ Promotion happens only in a **live session with Lou**, with any one AI as partne
 **Other labels:**
 - **`turn:<bot>`:** only with `state:turn`, one at a time.
 - **`vote:<bot>`:** only with `state:voting`. Each bot removes its own.
-- **`claimed:<role>`:** the lock (6.3). Roles are `muse`, `perplexity`, `claude` and `auditor`.
+- **`claimed:<role>`:** the lock (6.3). Roles are `muse`, `groky`, `claude` and `auditor`.
 - **`bot-error`:** a bot or the auditor hit an error or mismatch on this Issue. Bots skip Issues carrying it; the orchestrator clears it (section 12, pass 1).
 - **`kind:topic`, `kind:node`, `topic:NNN`, `depth:<n>`, `soft-go`.**
 
@@ -283,7 +283,7 @@ A topic Issue carries exactly one of `topic-state:active`, `done`, `parked` or `
 ```markdown
 ---
 node: 03.2
-bot: perplexity
+bot: groky
 round: 2
 ---
 web_access: yes | no
@@ -415,8 +415,8 @@ lou_cycles: 0
 next_item: 4               # next free item id; ids are never reused
 version_hashes: []          # one per round, sha256 of the accepted items text
 soft_go_dissents: {}        # item id → [{round, bot, choice}]
-dead_locks: {muse: 0, perplexity: 0, claude: 0, auditor: 0}
-bot_errors: {muse: 0, perplexity: 0, claude: 0, auditor: 0}
+dead_locks: {muse: 0, groky: 0, claude: 0, auditor: 0}
+bot_errors: {muse: 0, groky: 0, claude: 0, auditor: 0}
 merge_of: null              # set by /pick X Z: {round, letters} for the next round
 ever_stuck: false
 issue: 42
@@ -488,7 +488,7 @@ Anything other than approval goes through the handshake (9.1) on the PR.
 
 ## 11. Runbook: discussion bot
 
-`ME` = `muse` | `perplexity` | `claude`. Do these steps in order, and handle at most one task.
+`ME` = `muse` | `groky` | `claude`. Do these steps in order, and handle at most one task.
 
 1. **Check in** (section 14).
 2. **Singleton.** List open Issues labeled `claimed:$ME`. For each, read its comments: if the newest `lock: $ME` heartbeat is under 30 minutes old, **exit now**. Dead locks are left for the orchestrator to clear.
@@ -681,8 +681,8 @@ gh api user --jq .login
 
 ### 14.2 Role
 
-- **If your instructions name your role, use it.** The roles are `muse`, `perplexity`, `claude`, `auditor`, `intake` and `thread` (here only for a bot conversation). Scheduled runs always name it.
-- **Otherwise,** ask Lou: *"Which role am I: muse, perplexity, claude, auditor, intake, or thread?"* Do nothing else until he answers.
+- **If your instructions name your role, use it.** The roles are `muse`, `groky`, `claude`, `auditor`, `intake` and `thread` (here only for a bot conversation). Scheduled runs always name it.
+- **Otherwise,** ask Lou: *"Which role am I: muse, groky, claude, auditor, intake, or thread?"* Do nothing else until he answers.
 
 ### 14.3 Workspace (every run; you have no memory of earlier runs)
 

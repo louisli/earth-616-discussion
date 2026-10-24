@@ -5,7 +5,7 @@ Every idea starts as a variant. It gets debated here, and the ones that hold up 
 This repo holds conversations only, no code or specs (apart from the orchestrator that runs it). It has two functions:
 
 **1. The debate loop** (`topics/`, AGENTS.md sections 4–14). Ideas are broken down until they're buildable.
-- **Discussion.** Three models (Muse, Perplexity, and Claude via the Grok bot) debate each idea in rounds and break it down until every piece is atomic.
+- **Discussion.** Three models (Muse, Grok, and Claude launched by the Grok bot) debate each idea in rounds and break it down until every piece is atomic.
 - **Coordination.** A script orchestrates.
 - **Auditing.** Claude Code audits every round against the rules.
 - **Approval.** Lou approves finished bundles by merging their PRs. Only approved plans reach the planner.
@@ -25,7 +25,7 @@ This repo holds conversations only, no code or specs (apart from the orchestrato
     - **No access, or read-only:** stop and tell Lou exactly what failed.
     - **Bots and the auditor** must be logged in as the **shared bot account**, never as `louisli`. That's how comments by `louisli` are known to be Lou's.
 2. **Read [`AGENTS.md`](AGENTS.md).** It's the one rulebook every AI follows, and there are no other rule files. Begin with **section 14 (check-in)**. It walks you through:
-    - **Know your role.** If Lou didn't name it, ask him: *muse, perplexity, claude, auditor, intake, or thread?*
+    - **Know your role.** If Lou didn't name it, ask him: *muse, groky, claude, auditor, intake, or thread?*
     - **Set up your workspace,** every run: clone, git auth, and the git identity `<role>-bot`. You have no memory of earlier runs.
     - **First time?** (bots and the auditor; `agents/<role>.md` doesn't exist) Do a read-only dry run, write your check-in file, propose your schedule to Lou, and stop.
     - **Returning?** Read your role's sections, run your runbook once, and exit.
@@ -43,7 +43,7 @@ This repo holds conversations only, no code or specs (apart from the orchestrato
 
 These are summaries. The exact steps are in [`AGENTS.md`](AGENTS.md), in the section shown in brackets.
 
-### Discussion bots: Muse, Perplexity, Claude [§11]
+### Discussion bots: Muse, Grok (`groky`), Claude [§11]
 
 | When | What it does |
 | --- | --- |

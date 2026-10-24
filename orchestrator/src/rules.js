@@ -1,7 +1,7 @@
 // Pure decision rules: next node, writing order, round outcome (pass 6), bundles (10.1), Lou's commands (9.2).
 import { compareNodeIds, normalizeText, parentId, NODE_ID_RE } from './util.js';
 
-export const BOTS = ['muse', 'perplexity', 'claude'];
+export const BOTS = ['muse', 'groky', 'claude'];
 export const ACTIVE_STATES = ['turn', 'ballot', 'voting', 'audit', 'audited'];
 
 // ---------- scheduling (AGENTS.md 5.1) ----------
@@ -48,7 +48,7 @@ export function pickNextNodes(nodes, maxActive) {
 
 /**
  * Writing order (AGENTS.md 5.1): A is a bot that isn't A on another active node;
- * ties go to the bot after the previous round's A in the cycle muse → perplexity → claude.
+ * ties go to the bot after the previous round's A in the cycle muse → groky → claude.
  */
 export function chooseOrder({ prevA, busyA }) {
   const start = prevA ? (BOTS.indexOf(prevA) + 1) % BOTS.length : 0;
