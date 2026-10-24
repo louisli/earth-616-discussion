@@ -677,8 +677,8 @@ gh api user --jq .login
 
 ### 14.2 Role
 
-- **If your instructions name your role, use it.** The roles are `muse`, `perplexity`, `claude`, `auditor` and `intake`. Scheduled runs always name it.
-- **Otherwise,** ask Lou: *"Which role am I: muse, perplexity, claude, auditor, or intake?"* Do nothing else until he answers.
+- **If your instructions name your role, use it.** The roles are `muse`, `perplexity`, `claude`, `auditor`, `intake` and `thread` (here only for a bot conversation). Scheduled runs always name it.
+- **Otherwise,** ask Lou: *"Which role am I: muse, perplexity, claude, auditor, intake, or thread?"* Do nothing else until he answers.
 
 ### 14.3 Workspace (every run; you have no memory of earlier runs)
 
@@ -724,6 +724,8 @@ Intake partners use their normal identity, not a `-bot` one.
 3. **Run your runbook once** (section 11, 12 or 13), and exit when it says to.
 
 **Intake partners** keep no check-in file. After 14.1–14.3, go to section 4.
+
+**Thread participants** keep no check-in file either. After 14.1–14.3, go to section 15 and open the thread Lou pointed you to.
 
 ## 15. Bot conversations
 
