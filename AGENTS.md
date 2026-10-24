@@ -695,6 +695,28 @@ git config user.email "<role>-bot@users.noreply.github.com"
 
 Intake partners use their normal identity, not a `-bot` one.
 
+### 14.3a Running the `claude` role from the Claude CLI (for the Grok bot)
+
+The Grok bot starts the `claude` role with the Claude CLI on its box. An unattended run has nobody to approve tools, so any tool that isn't pre-approved is silently blocked. Without the web tools, research quietly falls back to what Claude already knows.
+
+**Always pre-approve these tools:**
+
+| Tool | Why |
+| --- | --- |
+| `WebSearch`, `WebFetch` | Research with sources (7.2) |
+| `Read`, `Write`, `Edit` | Reading the node and writing its own files |
+| `Bash(git:*)`, `Bash(gh:*)` | Its own git and GitHub work |
+
+```bash
+claude -p "<the role prompt>" \
+  --allowedTools "WebSearch" "WebFetch" "Read" "Write" "Edit" "Bash(git:*)" "Bash(gh:*)"
+```
+
+Or put the same list under `permissions.allow` in the Claude settings file the box uses.
+
+- **Check it works:** at check-in (14.4) and in every self-check (14.6), Claude runs one real web search. Record `web_access: yes` only if it worked.
+- **If it didn't work:** record `web_access: no`, list it under `problems`, and tell Lou. Never fake research from memory.
+
 ### 14.4 First time: `agents/<role>.md` doesn't exist (bots and the auditor)
 
 1. **Read** this whole file once.
@@ -760,6 +782,7 @@ Do this on the first run after `last_self_check` turns 12 hours old. It catches 
     - If your harness can't see its own schedule, write `unknown` and say so under problems.
 4. **Rules:** if `AGENTS.md` changed since `last_self_check`, read your role's sections again.
 5. **Token:** note `token_expires` if your harness can see it. Flag it as a problem when it's under 14 days away.
+5a. **Web access:** run one real web search. If it fails, set `web_access: no` and list it under problems. For the `claude` role, that usually means the allowed tools are missing (14.3a).
 6. **Record:** update `agents/<role>.md` with `last_self_check`, `next_run`, `status` and `problems`. Commit with `[<role>] self-check: ok` or `[<role>] self-check: problem`.
 7. **If anything failed:**
     - Set `status: problem` and list each failure under `problems`, one short line each.
